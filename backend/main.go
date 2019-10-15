@@ -73,6 +73,9 @@ func createProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.Unmarshal(reqBody, &newProduct)
+
+	newProduct.Quantity = 0 // Requiremenet
+
 	sampleProducts = append(sampleProducts, newProduct)
 	w.WriteHeader(http.StatusCreated)
 
