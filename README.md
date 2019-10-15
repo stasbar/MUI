@@ -1,6 +1,11 @@
 # MUI Project
+
+## Mobile app
+
 Flutter app
+
 ## Backend server
+
 Golang backend
 
 ### API:
