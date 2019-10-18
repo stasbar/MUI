@@ -20,13 +20,13 @@ type Product struct {
 }
 
 var sampleProducts = []Product{
-	Product{"1", "Samsung", "Galaxy S7", 1999.0, 100},
-	Product{"2", "Samsung", "Galaxy S8", 2299.0, 100},
-	Product{"3", "Google", "Nexus 5", 1500.0, 20},
-	Product{"4", "Google", "Nexus 6P", 1899.0, 20},
-	Product{"5", "Google", "Pixel", 1999.0, 10},
-	Product{"6", "Google", "Pixel 2", 2299.0, 20},
-	Product{"7", "Google", "Pixel 3", 2599.0, 30},
+	Product{"1", "Samsung", "Galaxy S7", 1999, 100},
+	Product{"2", "Samsung", "Galaxy S8", 2299, 100},
+	Product{"3", "Google", "Nexus 5", 1500, 20},
+	Product{"4", "Google", "Nexus 6P", 1899, 20},
+	Product{"5", "Google", "Pixel", 1999, 10},
+	Product{"6", "Google", "Pixel 2", 2299, 20},
+	Product{"7", "Google", "Pixel 3", 2599, 30},
 }
 
 var validPath = regexp.MustCompile("^/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)$")
