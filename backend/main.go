@@ -3,9 +3,11 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	_ "github.com/joho/godotenv/autoload"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 )
 
@@ -134,5 +136,7 @@ func deltaQuantity(w http.ResponseWriter, r *http.Request, id string) {
 func main() {
 	http.HandleFunc("/products/", authorize(productsHandler))
 	http.HandleFunc("/deltaQuantity/", authorize(deltaQuantity))
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	sslCert := os.Getenv("STASBAR_SSL_CERT")
+	sslKey := os.Getenv("STASBAR_SSL_KEY")
+	log.Fatal(http.ListenAndServeTLS(":1234", sslCert, sslKey, nil))
 }
