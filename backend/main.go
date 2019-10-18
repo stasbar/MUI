@@ -138,5 +138,6 @@ func main() {
 	http.HandleFunc("/deltaQuantity/", authorize(deltaQuantity))
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
-	log.Fatal(http.ListenAndServeTLS(":1234", sslCert, sslKey, nil))
+	httpsPort := os.Getenv("HTTPS_PORT")
+	log.Fatal(http.ListenAndServeTLS(":" + httpsPort, sslCert, sslKey, nil))
 }
