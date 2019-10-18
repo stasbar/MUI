@@ -1,8 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
+import 'dart:async';
+import 'dart:io';
+import 'package:http/io_client.dart';
 import 'model/Product.dart';
 
 class ProductsPage extends StatelessWidget {
@@ -19,18 +20,19 @@ class ProductsPage extends StatelessWidget {
   }
 }
 
-
 class Products extends StatefulWidget {
-
   @override
   ProductsState createState() => ProductsState();
 }
 
 class ProductsState extends State<Products> {
-
   Future<List<Product>> fetchProducts() async {
-    final response = await http.get(
-        'https://warehouser.stasbar.com/posts');
+    HttpClient httpClient = new HttpClient()
+      ..badCertificateCallback =
+      ((X509Certificate cert, String host, int port) => true);
+    IOClient ioClient = new IOClient(httpClient);
+    final url = 'https://home.stasbar.com:1234/products/';
+    final response = await ioClient.get(url);
     if (response.statusCode == 200) {
       final postsJson = json.decode(response.body);
       List<Product> posts = [];
@@ -42,6 +44,8 @@ class ProductsState extends State<Products> {
       throw Exception('Filed to load product');
     }
   }
+
+  final TextStyle _biggerFont = const TextStyle(fontSize: 18);
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +62,7 @@ class ProductsState extends State<Products> {
               itemCount: snapshot.data.length,
               itemBuilder: (BuildContext _context, int i) {
                 final product = snapshot.data[i];
-                return ListTile(title: Text(product.manufacturer+""+product.model), subtitle: Text("\$${product.price} QA:${product.quantity}"));
+                return _buildRow(product);
               },
             );
           } else if (snapshot.hasError) {
@@ -71,5 +75,15 @@ class ProductsState extends State<Products> {
       ),
     );
   }
-}
 
+  Widget _buildRow(Product product) {
+    return ListTile(
+      title: Text(
+        product.manufacturer + "" + product.model,
+        style: _biggerFont,
+      ),
+      subtitle: Text("\$${product.price} QA:${product.quantity}"),
+      trailing: Icon(Icons.phone_android),
+    );
+  }
+}

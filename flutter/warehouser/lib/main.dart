@@ -1,41 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:my_app/items.dart';
+import 'package:warehouser/items.dart';
+
 // import the io version
-import 'package:openid_client/openid_client_io.dart';
-// use url launcher package
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
 
 void main() => runApp(MyApp());
 
-authenticate(Uri uri, String clientId, List<String> scopes) async {
+const googleClientId =
+    "960807507840-ts3874na6r9h6ctrp5mig0fjgnjoc020.apps.googleusercontent.com";
+const googleUri = "https://accounts.google.com/o/oauth2/v2/auth";
 
+FlutterAppAuth appAuth = FlutterAppAuth();
+
+Future<AuthorizationTokenResponse> authenticate(
+    String issuerUri, String clientId, List<String> scopes) async {
   // create the client
-  var issuer = await Issuer.discover(uri);
-  var client = new Client(issuer, clientId);
-
-  // create a function to open a browser with an url
-  urlLauncher(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url, forceWebView: true);
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
-
-  // create an authenticator
-  var authenticator = new Authenticator(client,
+  var result = await appAuth.authorizeAndExchangeCode(
+    AuthorizationTokenRequest(
+      clientId,
+      'com.stasbar.warehouser:/oauth2redirect',
+      issuer: issuerUri,
       scopes: scopes,
-      port: 4000, urlLancher: urlLauncher);
-
-  // starts the authentication
-  var c = await authenticator.authorize();
-
-  // close the webview when finished
-  closeWebView();
-
-  // return the user info
-  return await c.getUserInfo();
-
+    ),
+  );
+  print(result);
+  print(result.accessToken);
+  print(result.authorizationAdditionalParameters);
+  print(result.idToken);
+  print(result.tokenAdditionalParameters);
+  print(result.tokenType);
+  return result;
 }
 
 class MyApp extends StatelessWidget {
@@ -71,60 +65,23 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final List<WordPair> _suggestions = <WordPair>[];
-  final Set<WordPair> _saved = Set<WordPair>();
-  final TextStyle _biggerFont = const TextStyle(fontSize: 18);
-
-  Widget _buildSuggestions() {
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (BuildContext _context, int i) {
-        if (i.isOdd) {
-          return Divider();
-        }
-
-        final int index = i ~/ 2;
-
-        if (index >= _suggestions.length) {
-          _suggestions.addAll(generateWordPairs().take(10));
-        }
-        return _buildRow(_suggestions[index]);
-      },
-    );
-  }
-
-  Widget _buildRow(WordPair pair) {
-    final bool alreadySaved = _saved.contains(pair);
-    return ListTile(
-      title: Text(
-        pair.asPascalCase,
-        style: _biggerFont,
-      ),
-      trailing: Icon(
-        alreadySaved ? Icons.favorite : Icons.favorite_border,
-        color: alreadySaved ? Colors.red : null,
-      ),
-      onTap: () {
-        setState(() {
-          if (alreadySaved) {
-            _saved.remove(pair);
-          } else {
-            _saved.add(pair);
-          }
-        });
-      },
-    );
-  }
+  String idToken = "";
+  String accessToken = "";
 
   void _pushSaved() {
+    Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (BuildContext context) {
+      return ProductsPage();
+    }));
+  }
 
-    Navigator.of(context).push(
-        MaterialPageRoute<void>(
-            builder: (BuildContext context) {
-              return ProductsPage();
-            }
-        )
-    );
+  void _auth() async {
+    var result = await authenticate('https://accounts.google.com',
+        googleClientId, ["openid", "email", "profile"]);
+    setState(() {
+      idToken = result.idToken;
+      accessToken = result.accessToken;
+    });
   }
 
   @override
@@ -142,9 +99,13 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: <Widget>[
           IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
+          IconButton(icon: Icon(Icons.assignment_ind), onPressed: _auth),
         ],
       ),
-      body: _buildSuggestions(),
+      body: Column(children: [
+        Text("idToken: " + idToken),
+        Text("accessToken:" + accessToken)
+      ]),
     );
   }
 }

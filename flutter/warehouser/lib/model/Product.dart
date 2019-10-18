@@ -2,7 +2,7 @@ class Product{
   final String id;
   final String manufacturer;
   final String model;
-  final double price;
+  final int price;
   final int quantity;
 
   Product({this.id, this.manufacturer, this.model, this.price, this.quantity});
