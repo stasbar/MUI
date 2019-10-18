@@ -16,7 +16,7 @@ type Product struct {
 	Manufacturer string  `json:"manufacturer"`
 	Model        string  `json:"model"`
 	Price        float32 `json:"price"`
-	Quantity     uint    `json:"qunatity"`
+	Quantity     uint    `json:"quantity"`
 }
 
 var sampleProducts = []Product{
@@ -139,5 +139,5 @@ func main() {
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
 	httpsPort := os.Getenv("HTTPS_PORT")
-	log.Fatal(http.ListenAndServeTLS(":" + httpsPort, sslCert, sslKey, nil))
+	log.Fatal(http.ListenAndServeTLS(":"+httpsPort, sslCert, sslKey, nil))
 }
