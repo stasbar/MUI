@@ -12,11 +12,11 @@ import (
 )
 
 type Product struct {
-	Id           string  `json:"id"`
-	Manufacturer string  `json:"manufacturer"`
-	Model        string  `json:"model"`
-	Price        float32 `json:"price"`
-	Quantity     uint    `json:"quantity"`
+	Id           string `json:"id"`
+	Manufacturer string `json:"manufacturer"`
+	Model        string `json:"model"`
+	Price        uint   `json:"price"`
+	Quantity     uint   `json:"quantity"`
 }
 
 var sampleProducts = []Product{
