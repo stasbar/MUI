@@ -3,6 +3,7 @@ import 'package:warehouser/items.dart';
 
 // import the io version
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 
 void main() => runApp(MyApp());
 
@@ -12,24 +13,21 @@ const googleUri = "https://accounts.google.com/o/oauth2/v2/auth";
 
 FlutterAppAuth appAuth = FlutterAppAuth();
 
-Future<AuthorizationTokenResponse> authenticate(
-    String issuerUri, String clientId, List<String> scopes) async {
+Future<AuthorizationTokenResponse> authenticateGoogle() async {
   // create the client
-  var result = await appAuth.authorizeAndExchangeCode(
+  return appAuth.authorizeAndExchangeCode(
     AuthorizationTokenRequest(
-      clientId,
+      googleClientId,
       'com.stasbar.warehouser:/oauth2redirect',
-      issuer: issuerUri,
-      scopes: scopes,
+      issuer: 'https://accounts.google.com',
+      scopes: ["openid", "email", "profile"],
     ),
   );
-  print(result);
-  print(result.accessToken);
-  print(result.authorizationAdditionalParameters);
-  print(result.idToken);
-  print(result.tokenAdditionalParameters);
-  print(result.tokenType);
-  return result;
+}
+
+Future<FacebookLoginResult> authenticateFacebook() async {
+  final facebookLogin = FacebookLogin();
+  return facebookLogin.logIn(['email']);
 }
 
 class MyApp extends StatelessWidget {
@@ -66,6 +64,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String idToken = "";
+  String userId = "";
   String accessToken = "";
 
   void _pushSaved() {
@@ -75,13 +74,34 @@ class _MyHomePageState extends State<MyHomePage> {
     }));
   }
 
-  void _auth() async {
-    var result = await authenticate('https://accounts.google.com',
-        googleClientId, ["openid", "email", "profile"]);
+  void _authGoogle() async {
+    var result = await authenticateGoogle();
     setState(() {
       idToken = result.idToken;
       accessToken = result.accessToken;
     });
+  }
+
+  void _authFacebook() async {
+    var result = await authenticateFacebook();
+    switch (result.status) {
+      case FacebookLoginStatus.loggedIn:
+        setState(() {
+          userId = result.accessToken.userId;
+          accessToken = result.accessToken.token;
+        });
+        break;
+      case FacebookLoginStatus.cancelledByUser:
+        setState(() {
+          userId = "cancelByUser";
+        });
+        break;
+      case FacebookLoginStatus.error:
+        setState(() {
+          userId = result.errorMessage;
+        });
+        break;
+    }
   }
 
   @override
@@ -99,12 +119,14 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: <Widget>[
           IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
-          IconButton(icon: Icon(Icons.assignment_ind), onPressed: _auth),
+          IconButton(icon: Icon(Icons.assignment_ind), onPressed: _authGoogle),
+          IconButton(icon: Icon(Icons.face), onPressed: _authFacebook),
         ],
       ),
       body: Column(children: [
         Text("idToken: " + idToken),
-        Text("accessToken:" + accessToken)
+        Text("accessToken:" + accessToken),
+        Text("userId:" + userId)
       ]),
     );
   }
