@@ -26,25 +26,6 @@ class Products extends StatefulWidget {
 }
 
 class ProductsState extends State<Products> {
-  Future<List<Product>> fetchProducts() async {
-    HttpClient httpClient = new HttpClient()
-      ..badCertificateCallback =
-      ((X509Certificate cert, String host, int port) => true);
-    IOClient ioClient = new IOClient(httpClient);
-    final url = 'https://home.stasbar.com:1234/products/';
-    final response = await ioClient.get(url);
-    if (response.statusCode == 200) {
-      final postsJson = json.decode(response.body);
-      List<Product> posts = [];
-      for (final post in postsJson) {
-        posts.add(Product.fromJson(post));
-      }
-      return posts;
-    } else {
-      throw Exception('Filed to load product');
-    }
-  }
-
   final TextStyle _biggerFont = const TextStyle(fontSize: 18);
 
   @override
@@ -74,6 +55,26 @@ class ProductsState extends State<Products> {
         },
       ),
     );
+  }
+
+  Future<List<Product>> fetchProducts() async {
+    HttpClient httpClient = new HttpClient()
+      ..badCertificateCallback =
+      ((X509Certificate cert, String host, int port) => true);
+    IOClient ioClient = new IOClient(httpClient);
+    final url = 'https://home.stasbar.com:1234/products/';
+    final response = await ioClient.get(url);
+
+    if (response.statusCode == 200) {
+      final postsJson = json.decode(response.body);
+      List<Product> posts = [];
+      for (final post in postsJson) {
+        posts.add(Product.fromJson(post));
+      }
+      return posts;
+    } else {
+      throw Exception('Filed to load product');
+    }
   }
 
   Widget _buildRow(Product product) {
