@@ -61,6 +61,14 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void _authUsernamePassword() async {
+    var result = await authenticateUsernamePassword();
+    setState(() {
+      idToken = result.idToken;
+      accessToken = result.accessToken;
+    });
+  }
+
   void _authFacebook() async {
     var result = await authenticateFacebook();
     switch (result.status) {
@@ -100,6 +108,7 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
           IconButton(icon: Icon(Icons.assignment_ind), onPressed: _authGoogle),
           IconButton(icon: Icon(Icons.face), onPressed: _authFacebook),
+          IconButton(icon: Icon(Icons.perm_identity), onPressed: _authUsernamePassword),
         ],
       ),
       body: Column(children: [

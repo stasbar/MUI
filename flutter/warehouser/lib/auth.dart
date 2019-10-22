@@ -23,3 +23,27 @@ Future<FacebookLoginResult> authenticateFacebook() async {
   final facebookLogin = FacebookLogin();
   return facebookLogin.logIn(['email']);
 }
+
+Future<AuthorizationTokenResponse> authenticateUsernamePassword() async {
+  final authorizationResponse = await appAuth.authorize(
+    AuthorizationRequest("my-client", "com.stasbar.warehouser:/oauth2redirect",
+        serviceConfiguration: AuthorizationServiceConfiguration(
+          "http://fosite.home.stasbar.com/oauth2/auth",
+          "http://fosite.home.stasbar.com/oauth2/token",
+        ),
+
+        scopes: ['fosite'],
+        issuer: 'http://fosite.home.stasbar.com'),
+  );
+  return await appAuth.token(
+    TokenRequest("my-client", "com.stasbar.warehouser:/oauth2redirect",
+        serviceConfiguration: AuthorizationServiceConfiguration(
+          "http://fosite.home.stasbar.com/oauth2/auth",
+          "http://fosite.home.stasbar.com/oauth2/token",
+        ),
+        authorizationCode: authorizationResponse.authorizationCode,
+        grantType: 'code',
+        scopes: ['fosite'],
+        issuer: 'http://fosite.home.stasbar.com'),
+  );
+}
