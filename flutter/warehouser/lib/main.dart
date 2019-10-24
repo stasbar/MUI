@@ -8,7 +8,6 @@ import 'auth.dart';
 
 void main() => runApp(MyApp());
 
-
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
@@ -45,6 +44,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String idToken = "";
   String userId = "";
   String accessToken = "";
+  String permissions = "";
+  String message = "";
 
   void _pushSaved() {
     Navigator.of(context)
@@ -62,9 +63,26 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _authUsernamePassword() async {
+    print("auth username password");
     var result = await authenticateUsernamePassword();
+    print("result: ${result.authorizationCode}");
     setState(() {
+      message = result.authorizationAdditionalParameters.toString();
+      idToken = "";
+      permissions = "";
+      userId = "";
+      accessToken = result.authorizationCode;
+    });
+  }
+
+  void _authToken() async {
+    print("auth username password");
+    var result = await authenticateAndToken();
+    print("result: ${result.accessToken}");
+    setState(() {
+      message = result.authorizationAdditionalParameters.toString();
       idToken = result.idToken;
+      permissions = "";
       accessToken = result.accessToken;
     });
   }
@@ -74,18 +92,19 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (result.status) {
       case FacebookLoginStatus.loggedIn:
         setState(() {
+          permissions = result.accessToken.permissions.toString();
           userId = result.accessToken.userId;
           accessToken = result.accessToken.token;
         });
         break;
       case FacebookLoginStatus.cancelledByUser:
         setState(() {
-          userId = "cancelByUser";
+          message = "cancelByUser";
         });
         break;
       case FacebookLoginStatus.error:
         setState(() {
-          userId = result.errorMessage;
+          message = result.errorMessage;
         });
         break;
     }
@@ -106,15 +125,39 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
         actions: <Widget>[
           IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
-          IconButton(icon: Icon(Icons.assignment_ind), onPressed: _authGoogle),
-          IconButton(icon: Icon(Icons.face), onPressed: _authFacebook),
-          IconButton(icon: Icon(Icons.perm_identity), onPressed: _authUsernamePassword),
         ],
       ),
       body: Column(children: [
-        Text("idToken: " + idToken),
-        Text("accessToken:" + accessToken),
-        Text("userId:" + userId)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            RaisedButton(child: Text("Google"), onPressed: _authGoogle),
+            RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
+            RaisedButton(
+                child: Text("OAuth2"), onPressed: _authUsernamePassword),
+            RaisedButton(child: Text("OpenID"), onPressed: _authToken),
+          ],
+        ),
+        Card(
+            child: ListTile(
+          title: Text("idToken"),
+          subtitle: Text(idToken),
+        )),
+        Card(
+            child: ListTile(
+          title: Text("accessToken"),
+          subtitle: Text(accessToken),
+        )),
+        Card(
+            child: ListTile(
+          title: Text("userId"),
+          subtitle: Text(userId),
+        )),
+        Card(
+            child: ListTile(
+          title: Text("message"),
+          subtitle: Text(message),
+        )),
       ]),
     );
   }

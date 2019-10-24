@@ -24,26 +24,30 @@ Future<FacebookLoginResult> authenticateFacebook() async {
   return facebookLogin.logIn(['email']);
 }
 
-Future<AuthorizationTokenResponse> authenticateUsernamePassword() async {
-  final authorizationResponse = await appAuth.authorize(
-    AuthorizationRequest("my-client", "com.stasbar.warehouser:/oauth2redirect",
-        serviceConfiguration: AuthorizationServiceConfiguration(
-          "http://fosite.home.stasbar.com/oauth2/auth",
-          "http://fosite.home.stasbar.com/oauth2/token",
-        ),
+Future<AuthorizationResponse> authenticateUsernamePassword() async {
+  print("before auth");
+  const myHost = "https://10.0.2.2:9000";
+  return await appAuth.authorize(AuthorizationRequest(
+    "warehouser",
+    "com.stasbar.warehouser:/oauth2redirect",
+    serviceConfiguration: AuthorizationServiceConfiguration(
+      "$myHost/oauth2/auth",
+      "$myHost/oauth2/token",
+    ),
+    scopes: ['openid', 'offline', 'photos.read'],
+  ));
+}
 
-        scopes: ['fosite'],
-        issuer: 'http://fosite.home.stasbar.com'),
-  );
-  return await appAuth.token(
-    TokenRequest("my-client", "com.stasbar.warehouser:/oauth2redirect",
-        serviceConfiguration: AuthorizationServiceConfiguration(
-          "http://fosite.home.stasbar.com/oauth2/auth",
-          "http://fosite.home.stasbar.com/oauth2/token",
-        ),
-        authorizationCode: authorizationResponse.authorizationCode,
-        grantType: 'code',
-        scopes: ['fosite'],
-        issuer: 'http://fosite.home.stasbar.com'),
-  );
+Future<AuthorizationTokenResponse> authenticateAndToken() async {
+  print("before auth");
+  const myHost = "https://10.0.2.2:9000";
+  return await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
+    "warehouser",
+    "com.stasbar.warehouser:/oauth2redirect",
+    serviceConfiguration: AuthorizationServiceConfiguration(
+      "$myHost/oauth2/auth",
+      "$myHost/oauth2/token",
+    ),
+    scopes: ['openid', 'offline', 'photos.read'],
+  ));
 }
