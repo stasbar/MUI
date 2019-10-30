@@ -30,24 +30,6 @@ var sampleProducts = []Product{
 	Product{"7", "Google", "Pixel 3", 2599, 30},
 }
 
-var validPath = regexp.MustCompile("^/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)$")
-
-func authorize(fn func(http.ResponseWriter, *http.Request, string)) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var pathSegments = validPath.FindStringSubmatch(r.URL.Path)
-		var id string
-		if len(pathSegments) == 0 {
-			id = ""
-		} else if len(pathSegments) == 3 {
-			id = pathSegments[2]
-		} else {
-			http.Error(w, "Invalid path", http.StatusBadRequest)
-			return
-		}
-		fn(w, r, id)
-	}
-}
-
 func getAllProducts(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	//TODO response json
 	json.NewEncoder(w).Encode(sampleProducts)
@@ -62,7 +44,7 @@ func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 }
 
-func createProduct(w http.ResponseWriter, r *http.Request) {
+func createProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var newProduct Product
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -127,7 +109,7 @@ func main() {
 	router.GET("/products", getAllProducts)
 	router.GET("/products/:id", getProduct)
 	router.POST("/products", createProduct)
-	router.DELETE("/products/:id", createProduct)
+	router.DELETE("/products/:id", deleteProduct)
 	router.PATCH("/deltaQuantity/:id", deltaQuantity)
 	router.POST("/authorize", authorizeUser)
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
