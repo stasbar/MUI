@@ -99,8 +99,14 @@ func deltaQuantity(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	//TODO
 }
 
-func authorizeUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//TODO
+func authGoogle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+  postTokenId := r.PostFormValue("tokenId")
+  tokenId := r.FormValue("tokenId")
+  fmt.Printf("postTokenId: %s tokenId: %s \n", postTokenId,tokenId)
+  // TODO exchange code for access token and ID Token. 
+}
+
+func authFacebook(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func main() {
@@ -110,7 +116,8 @@ func main() {
 	router.POST("/products", createProduct)
 	router.DELETE("/products/:id", deleteProduct)
 	router.PATCH("/deltaQuantity/:id", deltaQuantity)
-	router.POST("/authorize", authorizeUser)
+  router.POST("/auth/google", authGoogle)
+  router.POST("/auth/facebook", authFacebook)
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
 	httpsPort := os.Getenv("HTTPS_PORT")
