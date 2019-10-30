@@ -3,10 +3,6 @@ import 'model/Product.dart';
 import 'services/resource.dart';
 
 class ProductsPage extends StatelessWidget {
-  ProductsPage(this.resService);
-
-  final ResourceService resService;
-
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -15,24 +11,17 @@ class ProductsPage extends StatelessWidget {
       theme: ThemeData(
         primaryColor: Colors.white,
       ),
-      home: Products(resService),
+      home: Products(),
     );
   }
 }
 
 class Products extends StatefulWidget {
-  Products(this.resService);
-
-  final ResourceService resService;
-
   @override
-  ProductsState createState() => ProductsState(resService);
+  ProductsState createState() => ProductsState();
 }
 
 class ProductsState extends State<Products> {
-  ProductsState(this.resService);
-
-  final ResourceService resService;
   final TextStyle _biggerFont = const TextStyle(fontSize: 18);
 
   @override
@@ -42,7 +31,7 @@ class ProductsState extends State<Products> {
         title: Text('Products'),
       ),
       body: FutureBuilder<List<Product>>(
-        future: resService.fetchProducts(),
+        future: ResourceService.fetchProducts(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(

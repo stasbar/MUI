@@ -18,7 +18,7 @@ class AuthorizationService {
 
   static FlutterAppAuth appAuth = FlutterAppAuth();
 
-  Future<String> getHealthStatus() async {
+  static Future<String> getHealthStatus() async {
     final res = await ioClient.get(Uri.https(publicAuthority, '/health/ready'));
     if (res.statusCode == 200) {
       return json.decode(res.body).status;
@@ -28,7 +28,7 @@ class AuthorizationService {
     }
   }
 
-  Future<AuthorizationTokenResponse> authenticateAndToken() async {
+  static Future<AuthorizationTokenResponse> authenticateAndToken() async {
     return await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
       "warehouser",
       "com.stasbar.warehouser:/oauth2redirect",
@@ -37,7 +37,7 @@ class AuthorizationService {
     ));
   }
 
-  Future<AuthorizationTokenResponse> authenticateGoogle() {
+  static Future<AuthorizationTokenResponse> authenticateGoogle() {
     final googleClientId =
         "960807507840-ts3874na6r9h6ctrp5mig0fjgnjoc020.apps.googleusercontent.com";
     return appAuth.authorizeAndExchangeCode(
@@ -50,7 +50,7 @@ class AuthorizationService {
     );
   }
 
-  Future<FacebookLoginResult> authenticateFacebook() {
+  static Future<FacebookLoginResult> authenticateFacebook() {
     return FacebookLogin().logIn(['email']);
   }
 }

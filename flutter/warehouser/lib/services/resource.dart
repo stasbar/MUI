@@ -15,7 +15,7 @@ class ResourceService {
   static IOClient ioClient = new IOClient(httpClient);
 
 
-  Future<List<Product>> fetchProducts() async {
+  static Future<List<Product>> fetchProducts() async {
     final url = '$baseUrl/products';
     final response = await ioClient.get(url);
 
@@ -31,19 +31,19 @@ class ResourceService {
     }
   }
 
-  Future<String> exchangeGoogle(String tokenId) async {
+  static Future<String> exchangeGoogle(String tokenId) async {
     return _exchange('google', tokenId);
   }
 
-  Future<String> exchangeFacebook(String tokenId) async {
+  static Future<String> exchangeFacebook(String tokenId) async {
     return _exchange('facebook', tokenId);
   }
 
-  Future<String> exchangeWarehouser(String tokenId) async {
+  static Future<String> exchangeWarehouser(String tokenId) async {
     return _exchange('warehouser', tokenId);
   }
 
-  Future<String> _exchange(String provider, String tokenId) async {
+  static Future<String> _exchange(String provider, String tokenId) async {
     final url = '$baseUrl/auth/$provider';
     final response = await ioClient.post(url, body: {'tokenId': tokenId});
 

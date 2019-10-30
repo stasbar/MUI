@@ -8,17 +8,10 @@ import 'services/authorization.dart';
 // import the io version
 
 void main() {
-  final authService = new AuthorizationService();
-  final resService = new ResourceService();
-  runApp(MyApp(authService, resService));
+  runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  MyApp(this.authService, this.resService);
-
-  final AuthorizationService authService;
-  final ResourceService resService;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -32,21 +25,17 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title, this.authService, this.resService})
-      : super(key: key);
-  final AuthorizationService authService;
-  final ResourceService resService;
+  MyHomePage({Key key, this.title}) : super(key: key);
+
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState(authService, resService);
+  _MyHomePageState createState() {
+    return _MyHomePageState();
+  }
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  _MyHomePageState(this.authService, this.resService);
-
-  final AuthorizationService authService;
-  final ResourceService resService;
   String idToken = "";
   String userId = "";
   String accessToken = "";
@@ -56,19 +45,19 @@ class _MyHomePageState extends State<MyHomePage> {
   void _pushSaved() {
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (BuildContext context) {
-      return ProductsPage(resService);
+      return ProductsPage();
     }));
   }
 
   void _authGoogle() async {
-    var result = await authService.authenticateGoogle();
+    var result = await AuthorizationService.authenticateGoogle();
     setState(() {
       idToken = result.idToken;
     });
   }
 
   void _authFacebook() async {
-    var result = await authService.authenticateFacebook();
+    var result = await AuthorizationService.authenticateFacebook();
     switch (result.status) {
       case FacebookLoginStatus.loggedIn:
         setState(() {
@@ -92,7 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _authWarehourser() async {
     print("auth username password");
-    var result = await authService.authenticateAndToken();
+    var result = await AuthorizationService.authenticateAndToken();
     print("result: ${result.accessToken}");
     setState(() {
       message = result.authorizationAdditionalParameters.toString();
@@ -127,20 +116,20 @@ class _MyHomePageState extends State<MyHomePage> {
               RaisedButton(child: Text("Google"), onPressed: _authGoogle),
               RaisedButton(
                   child: Text("Send"),
-                  onPressed: () => resService.exchangeGoogle(idToken)),
+                  onPressed: () => ResourceService.exchangeGoogle(idToken)),
             ]),
             Column(children: [
               RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
               RaisedButton(
                   child: Text("Send"),
-                  onPressed: () => resService.exchangeFacebook(idToken)),
+                  onPressed: () => ResourceService.exchangeFacebook(idToken)),
             ]),
             Column(children: [
               RaisedButton(
                   child: Text("Warehourser"), onPressed: _authWarehourser),
               RaisedButton(
                   child: Text("Send"),
-                  onPressed: () => resService.exchangeWarehouser(idToken)),
+                  onPressed: () => ResourceService.exchangeWarehouser(idToken)),
             ]),
           ],
         ),
