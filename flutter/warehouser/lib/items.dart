@@ -11,7 +11,7 @@ class ProductsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Products',
       theme: ThemeData(
         primaryColor: Colors.white,
       ),
@@ -32,7 +32,7 @@ class ProductsState extends State<Products> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Saved Suggestions'),
+        title: Text('Products'),
       ),
       body: FutureBuilder<List<Product>>(
         future: fetchProducts(),

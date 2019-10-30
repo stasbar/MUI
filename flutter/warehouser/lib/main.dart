@@ -13,11 +13,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Warehourser',
       theme: ThemeData(
         primaryColor: Colors.white,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Home'),
     );
   }
 }
@@ -57,8 +57,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _authGoogle() async {
     var result = await authenticateGoogle();
     setState(() {
-      idToken = result.idToken;
-      accessToken = result.accessToken;
+      message = result.authorizationCode;
     });
   }
 
@@ -110,27 +109,8 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _sendTokenId() async {
-    var result = await authenticateFacebook();
-    switch (result.status) {
-      case FacebookLoginStatus.loggedIn:
-        setState(() {
-          permissions = result.accessToken.permissions.toString();
-          userId = result.accessToken.userId;
-          accessToken = result.accessToken.token;
-        });
-        break;
-      case FacebookLoginStatus.cancelledByUser:
-        setState(() {
-          message = "cancelByUser";
-        });
-        break;
-      case FacebookLoginStatus.error:
-        setState(() {
-          message = result.errorMessage;
-        });
-        break;
-    }
+  void _sendGoogleAuthorizationCode() async {
+
   }
 
   @override
