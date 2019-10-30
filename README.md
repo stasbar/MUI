@@ -16,3 +16,7 @@ Golang backend
 - PUT `/products/:id` - update product with :id with JSON request body
 - DELETE `/products/:id` - delete product with :id
 - GET `/deltaQuantity/:id/:delta` - chnage quantity of product of :id by applying :delta to its current quantity
+
+## Authorization Service
+
+[Hydra](https://github.com/ory/hydra)

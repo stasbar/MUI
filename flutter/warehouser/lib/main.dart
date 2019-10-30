@@ -110,6 +110,29 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _sendTokenId() async {
+    var result = await authenticateFacebook();
+    switch (result.status) {
+      case FacebookLoginStatus.loggedIn:
+        setState(() {
+          permissions = result.accessToken.permissions.toString();
+          userId = result.accessToken.userId;
+          accessToken = result.accessToken.token;
+        });
+        break;
+      case FacebookLoginStatus.cancelledByUser:
+        setState(() {
+          message = "cancelByUser";
+        });
+        break;
+      case FacebookLoginStatus.error:
+        setState(() {
+          message = result.errorMessage;
+        });
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -138,6 +161,7 @@ class _MyHomePageState extends State<MyHomePage> {
             RaisedButton(child: Text("OpenID"), onPressed: _authToken),
           ],
         ),
+        RaisedButton(child: Text("Send tokenId to backend"), onPressed: _sendTokenId),
         Card(
             child: ListTile(
           title: Text("idToken"),

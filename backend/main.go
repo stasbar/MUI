@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -47,22 +48,17 @@ func authorize(fn func(http.ResponseWriter, *http.Request, string)) http.Handler
 	}
 }
 
-func productsHandler(w http.ResponseWriter, r *http.Request, id string) {
-	switch r.Method {
-	case "GET":
-		if id == "" {
-			getAllProducts(w)
-		} else {
-			getProduct(w, id)
+func getAllProducts(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//TODO response json
+	json.NewEncoder(w).Encode(sampleProducts)
+}
+
+func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
+	for _, product := range sampleProducts {
+		if product.Id == id {
+			json.NewEncoder(w).Encode(product)
 		}
-	case "POST":
-		createProduct(w, r)
-	case "DELETE":
-		deleteProduct(w, id)
-	case "PUT":
-		updateProduct(w, r, id)
-	default:
-		http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
 	}
 }
 
@@ -84,7 +80,8 @@ func createProduct(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(newProduct)
 }
 
-func updateProduct(w http.ResponseWriter, r *http.Request, id string) {
+func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
 	var updatedProduct Product
 
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -108,20 +105,8 @@ func updateProduct(w http.ResponseWriter, r *http.Request, id string) {
 	}
 }
 
-func getAllProducts(w http.ResponseWriter) {
-	//TODO response json
-	json.NewEncoder(w).Encode(sampleProducts)
-}
-
-func getProduct(w http.ResponseWriter, id string) {
-	for _, product := range sampleProducts {
-		if product.Id == id {
-			json.NewEncoder(w).Encode(product)
-		}
-	}
-}
-
-func deleteProduct(w http.ResponseWriter, id string) {
+func deleteProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id := ps.ByName("id")
 	for i, product := range sampleProducts {
 		if product.Id == id {
 			sampleProducts = append(sampleProducts[:i], sampleProducts[i+1:]...)
@@ -129,13 +114,22 @@ func deleteProduct(w http.ResponseWriter, id string) {
 		}
 	}
 }
-func deltaQuantity(w http.ResponseWriter, r *http.Request, id string) {
+func deltaQuantity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	//TODO
+}
+
+func authorizeUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	//TODO
 }
 
 func main() {
-	http.HandleFunc("/products/", authorize(productsHandler))
-	http.HandleFunc("/deltaQuantity/", authorize(deltaQuantity))
+	router := httprouter.New()
+	router.GET("/products", getAllProducts)
+	router.GET("/products/:id", getProduct)
+	router.POST("/products", createProduct)
+	router.DELETE("/products/:id", createProduct)
+	router.PATCH("/deltaQuantity/:id", deltaQuantity)
+	router.POST("/authorize", authorizeUser)
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
 	httpsPort := os.Getenv("HTTPS_PORT")

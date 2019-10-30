@@ -7,10 +7,9 @@ const googleUri = "https://accounts.google.com/o/oauth2/v2/auth";
 
 FlutterAppAuth appAuth = FlutterAppAuth();
 
-Future<AuthorizationTokenResponse> authenticateGoogle() async {
-  // create the client
-  return appAuth.authorizeAndExchangeCode(
-    AuthorizationTokenRequest(
+Future<TokenResponse> authenticateGoogle() {
+  return appAuth.token(
+    TokenRequest(
       googleClientId,
       'com.stasbar.warehouser:/oauth2redirect',
       issuer: 'https://accounts.google.com',
@@ -19,9 +18,8 @@ Future<AuthorizationTokenResponse> authenticateGoogle() async {
   );
 }
 
-Future<FacebookLoginResult> authenticateFacebook() async {
-  final facebookLogin = FacebookLogin();
-  return facebookLogin.logIn(['email']);
+Future<FacebookLoginResult> authenticateFacebook() {
+  return FacebookLogin().logIn(['email']);
 }
 
 Future<AuthorizationResponse> authenticateUsernamePassword() async {
