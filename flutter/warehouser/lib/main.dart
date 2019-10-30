@@ -102,10 +102,6 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void _sendGoogleAuthorizationCode() async {
-    resService.exchangeTokenIdForAccessToken(idToken);
-  }
-
   @override
   Widget build(BuildContext context) {
     // This method is rerun every time setState is called, for instance as done
@@ -127,15 +123,27 @@ class _MyHomePageState extends State<MyHomePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            RaisedButton(child: Text("Google"), onPressed: _authGoogle),
-            RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
-            RaisedButton(
-                child: Text("Warehourser"), onPressed: _authWarehourser),
+            Column(children: [
+              RaisedButton(child: Text("Google"), onPressed: _authGoogle),
+              RaisedButton(
+                  child: Text("Send"),
+                  onPressed: () => resService.exchangeGoogle(idToken)),
+            ]),
+            Column(children: [
+              RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
+              RaisedButton(
+                  child: Text("Send"),
+                  onPressed: () => resService.exchangeFacebook(idToken)),
+            ]),
+            Column(children: [
+              RaisedButton(
+                  child: Text("Warehourser"), onPressed: _authWarehourser),
+              RaisedButton(
+                  child: Text("Send"),
+                  onPressed: () => resService.exchangeWarehouser(idToken)),
+            ]),
           ],
         ),
-        RaisedButton(
-            child: Text("Send tokenId to backend"),
-            onPressed: _sendGoogleAuthorizationCode),
         Card(
             child: ListTile(
           title: Text("idToken"),

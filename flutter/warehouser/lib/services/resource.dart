@@ -10,7 +10,7 @@ class ResourceService {
 
   static HttpClient httpClient = new HttpClient()
     ..badCertificateCallback =
-        ((X509Certificate cert, String host, int port) => true);
+    ((X509Certificate cert, String host, int port) => true);
 
   static IOClient ioClient = new IOClient(httpClient);
 
@@ -31,13 +31,24 @@ class ResourceService {
     }
   }
 
-  Future<String> exchangeTokenIdForAccessToken(String tokenId) async {
-    final url = '$baseUrl/auth/google';
+  Future<String> exchangeGoogle(String tokenId) async {
+    return _exchange('google', tokenId);
+  }
+
+  Future<String> exchangeFacebook(String tokenId) async {
+    return _exchange('facebook', tokenId);
+  }
+
+  Future<String> exchangeWarehouser(String tokenId) async {
+    return _exchange('warehouser', tokenId);
+  }
+
+  Future<String> _exchange(String provider, String tokenId) async {
+    final url = '$baseUrl/auth/$provider';
     final response = await ioClient.post(url, body: {'tokenId': tokenId});
 
     if (response.statusCode == 200) {
-      final responseJson = json.decode(response.body);
-      return responseJson;
+      return json.decode(response.body).token;
     } else {
       throw Exception('Failed to exchange id for access token');
     }
