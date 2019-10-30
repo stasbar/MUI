@@ -1,12 +1,12 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'dart:io';
-import 'package:http/io_client.dart';
 import 'model/Product.dart';
+import 'services/resource.dart';
 
 class ProductsPage extends StatelessWidget {
+  ProductsPage(this.resService);
+
+  final ResourceService resService;
+
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
@@ -15,17 +15,24 @@ class ProductsPage extends StatelessWidget {
       theme: ThemeData(
         primaryColor: Colors.white,
       ),
-      home: Products(),
+      home: Products(resService),
     );
   }
 }
 
 class Products extends StatefulWidget {
+  Products(this.resService);
+
+  final ResourceService resService;
+
   @override
-  ProductsState createState() => ProductsState();
+  ProductsState createState() => ProductsState(resService);
 }
 
 class ProductsState extends State<Products> {
+  ProductsState(this.resService);
+
+  final ResourceService resService;
   final TextStyle _biggerFont = const TextStyle(fontSize: 18);
 
   @override
@@ -35,7 +42,7 @@ class ProductsState extends State<Products> {
         title: Text('Products'),
       ),
       body: FutureBuilder<List<Product>>(
-        future: fetchProducts(),
+        future: resService.fetchProducts(),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             return ListView.builder(
@@ -55,26 +62,6 @@ class ProductsState extends State<Products> {
         },
       ),
     );
-  }
-
-  Future<List<Product>> fetchProducts() async {
-    HttpClient httpClient = new HttpClient()
-      ..badCertificateCallback =
-      ((X509Certificate cert, String host, int port) => true);
-    IOClient ioClient = new IOClient(httpClient);
-    final url = 'https://home.stasbar.com:1234/products/';
-    final response = await ioClient.get(url);
-
-    if (response.statusCode == 200) {
-      final postsJson = json.decode(response.body);
-      List<Product> posts = [];
-      for (final post in postsJson) {
-        posts.add(Product.fromJson(post));
-      }
-      return posts;
-    } else {
-      throw Exception('Filed to load product');
-    }
   }
 
   Widget _buildRow(Product product) {

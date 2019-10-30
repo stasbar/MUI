@@ -2,15 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:warehouser/items.dart';
 
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
-import 'package:warehouser/services/auth.dart';
-import 'auth.dart';
+import 'services/resource.dart';
+import 'services/authorization.dart';
 
 // import the io version
 
-void main() => runApp(MyApp());
+void main() {
+  final authService = new AuthorizationService();
+  final resService = new ResourceService();
+  runApp(MyApp(authService, resService));
+}
 
 class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+  MyApp(this.authService, this.resService);
+
+  final AuthorizationService authService;
+  final ResourceService resService;
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -24,24 +32,21 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
+  MyHomePage({Key key, this.title, this.authService, this.resService})
+      : super(key: key);
+  final AuthorizationService authService;
+  final ResourceService resService;
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _MyHomePageState createState() => _MyHomePageState(authService, resService);
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  _MyHomePageState(this.authService, this.resService);
+
+  final AuthorizationService authService;
+  final ResourceService resService;
   String idToken = "";
   String userId = "";
   String accessToken = "";
@@ -51,44 +56,19 @@ class _MyHomePageState extends State<MyHomePage> {
   void _pushSaved() {
     Navigator.of(context)
         .push(MaterialPageRoute<void>(builder: (BuildContext context) {
-      return ProductsPage();
+      return ProductsPage(resService);
     }));
   }
 
   void _authGoogle() async {
-    var result = await authenticateGoogle();
+    var result = await authService.authenticateGoogle();
     setState(() {
       idToken = result.idToken;
-    });
-  }
-
-  void _authUsernamePassword() async {
-    print("auth username password");
-    var result = await authenticateUsernamePassword();
-    print("result: ${result.authorizationCode}");
-    setState(() {
-      message = result.authorizationAdditionalParameters.toString();
-      idToken = "";
-      permissions = "";
-      userId = "";
-      accessToken = result.authorizationCode;
-    });
-  }
-
-  void _authToken() async {
-    print("auth username password");
-    var result = await authenticateAndToken();
-    print("result: ${result.accessToken}");
-    setState(() {
-      message = result.authorizationAdditionalParameters.toString();
-      idToken = result.idToken;
-      permissions = "";
-      accessToken = result.accessToken;
     });
   }
 
   void _authFacebook() async {
-    var result = await authenticateFacebook();
+    var result = await authService.authenticateFacebook();
     switch (result.status) {
       case FacebookLoginStatus.loggedIn:
         setState(() {
@@ -110,8 +90,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
+  void _authWarehourser() async {
+    print("auth username password");
+    var result = await authService.authenticateAndToken();
+    print("result: ${result.accessToken}");
+    setState(() {
+      message = result.authorizationAdditionalParameters.toString();
+      idToken = result.idToken;
+      permissions = "";
+      accessToken = result.accessToken;
+    });
+  }
+
   void _sendGoogleAuthorizationCode() async {
-    exchangeAccessTokenForGoogleTokenId(idToken);
+    resService.exchangeTokenIdForAccessToken(idToken);
   }
 
   @override
@@ -138,11 +130,12 @@ class _MyHomePageState extends State<MyHomePage> {
             RaisedButton(child: Text("Google"), onPressed: _authGoogle),
             RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
             RaisedButton(
-                child: Text("OAuth2"), onPressed: _authUsernamePassword),
-            RaisedButton(child: Text("OpenID"), onPressed: _authToken),
+                child: Text("Warehourser"), onPressed: _authWarehourser),
           ],
         ),
-        RaisedButton(child: Text("Send tokenId to backend"), onPressed: _sendGoogleAuthorizationCode),
+        RaisedButton(
+            child: Text("Send tokenId to backend"),
+            onPressed: _sendGoogleAuthorizationCode),
         Card(
             child: ListTile(
           title: Text("idToken"),
