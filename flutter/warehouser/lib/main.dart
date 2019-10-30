@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:warehouser/items.dart';
 
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'package:warehouser/services/auth.dart';
 import 'auth.dart';
 
 // import the io version
@@ -57,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _authGoogle() async {
     var result = await authenticateGoogle();
     setState(() {
-      message = result.authorizationCode;
+      idToken = result.idToken;
     });
   }
 
@@ -110,7 +111,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void _sendGoogleAuthorizationCode() async {
-
+    exchangeAccessTokenForGoogleTokenId(idToken);
   }
 
   @override
