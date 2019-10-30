@@ -142,7 +142,7 @@ class _MyHomePageState extends State<MyHomePage> {
             RaisedButton(child: Text("OpenID"), onPressed: _authToken),
           ],
         ),
-        RaisedButton(child: Text("Send tokenId to backend"), onPressed: _sendTokenId),
+        RaisedButton(child: Text("Send tokenId to backend"), onPressed: _sendGoogleAuthorizationCode),
         Card(
             child: ListTile(
           title: Text("idToken"),
