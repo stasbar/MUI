@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+  "encoding/base64"
 	"fmt"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/julienschmidt/httprouter"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -100,24 +102,49 @@ func deltaQuantity(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func authGoogle(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-  postTokenId := r.PostFormValue("tokenId")
-  tokenId := r.FormValue("tokenId")
-  fmt.Printf("postTokenId: %s tokenId: %s \n", postTokenId,tokenId)
+  body, err := ioutil.ReadAll(r.Body)
+  if err != nil {
+    log.Fatal(err)
+    return
+  }
+  params, err := url.ParseQuery(string(body))
+  if err != nil {
+    log.Fatal(err)
+    return
+  }
+  fmt.Println("Query strings")
+  for key, value := range params {
+    fmt.Printf(" %s = %v\n", key, value)
+  }
+
+  decoded, err := base64.StdEncoding.DecodeString(params["tokenId"][0])
+  if err != nil {
+    fmt.Fprint(w, "Error", err)
+  }
+  fmt.Fprint(w, decoded)
   // TODO exchange code for access token and ID Token. 
 }
 
 func authFacebook(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+
+}
+
+func logger(next httprouter.Handle) httprouter.Handle {
+  return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+    fmt.Println(r.RequestURI)
+    next(w,r,ps)
+  }
 }
 
 func main() {
 	router := httprouter.New()
-	router.GET("/products", getAllProducts)
-	router.GET("/products/:id", getProduct)
-	router.POST("/products", createProduct)
-	router.DELETE("/products/:id", deleteProduct)
-	router.PATCH("/deltaQuantity/:id", deltaQuantity)
-  router.POST("/auth/google", authGoogle)
-  router.POST("/auth/facebook", authFacebook)
+	router.GET("/products", logger(getAllProducts))
+	router.GET("/products/:id", logger(getProduct))
+	router.POST("/products", logger(createProduct))
+	router.DELETE("/products/:id", logger(deleteProduct))
+	router.PATCH("/deltaQuantity/:id", logger(deltaQuantity))
+  router.POST("/auth/google", logger(authGoogle))
+  router.POST("/auth/facebook", logger(authFacebook))
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
 	httpsPort := os.Getenv("HTTPS_PORT")
