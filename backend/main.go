@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 )
 
 type Product struct {
@@ -115,5 +114,5 @@ func main() {
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
 	httpsPort := os.Getenv("HTTPS_PORT")
-	log.Fatal(http.ListenAndServeTLS(":"+httpsPort, sslCert, sslKey, nil))
+	log.Fatal(http.ListenAndServeTLS(":"+httpsPort, sslCert, sslKey, router))
 }
