@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/io_client.dart';
 import 'package:warehouser/model/Product.dart';
+import 'package:warehouser/model/User.dart';
 
 class ResourceService {
   static int port = 1234;
@@ -39,16 +40,23 @@ class ResourceService {
     return _exchange('facebook', tokenId);
   }
 
-  static Future<String> exchangeWarehouser(String tokenId) async {
-    return _exchange('warehouser', tokenId);
-  }
-
   static Future<String> _exchange(String provider, String tokenId) async {
     final url = '$baseUrl/auth/$provider';
     final response = await ioClient.post(url, body: {'tokenId': tokenId});
 
     if (response.statusCode == 200) {
       return json.decode(response.body).token;
+    } else {
+      throw Exception('Failed to exchange id for access token');
+    }
+  }
+
+  static Future<User>currentUser(String accessToken) async {
+    final url = '$baseUrl/currentUser';
+    final response = await ioClient.post(url, body: {'accessToken': accessToken});
+
+    if (response.statusCode == 200) {
+      return User.fromJson(json.decode(response.body));
     } else {
       throw Exception('Failed to exchange id for access token');
     }

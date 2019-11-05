@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:warehouser/items.dart';
 
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
+import 'model/User.dart';
 import 'services/resource.dart';
 import 'services/authorization.dart';
 
@@ -37,9 +38,8 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String idToken = "";
-  String userId = "";
+  User user;
   String accessToken = "";
-  String permissions = "";
   String message = "";
 
   void _pushSaved() {
@@ -61,9 +61,7 @@ class _MyHomePageState extends State<MyHomePage> {
     switch (result.status) {
       case FacebookLoginStatus.loggedIn:
         setState(() {
-          permissions = result.accessToken.permissions.toString();
-          userId = result.accessToken.userId;
-          accessToken = result.accessToken.token;
+          idToken = result.accessToken.token;
         });
         break;
       case FacebookLoginStatus.cancelledByUser:
@@ -81,13 +79,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _authWarehourser() async {
     print("auth username password");
-    var result = await AuthorizationService.authenticateAndToken();
+    var result = await AuthorizationService.authenticateWarehouser();
     print("result: ${result.accessToken}");
     setState(() {
       message = result.authorizationAdditionalParameters.toString();
       idToken = result.idToken;
-      permissions = "";
       accessToken = result.accessToken;
+    });
+    var userResult = await ResourceService.currentUser(accessToken);
+    setState(() {
+      user = userResult ;
     });
   }
 
@@ -108,52 +109,61 @@ class _MyHomePageState extends State<MyHomePage> {
           IconButton(icon: Icon(Icons.list), onPressed: _pushSaved),
         ],
       ),
-      body: Column(children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            Column(children: [
-              RaisedButton(child: Text("Google"), onPressed: _authGoogle),
-              RaisedButton(
-                  child: Text("Send"),
-                  onPressed: () => ResourceService.exchangeGoogle(idToken)),
-            ]),
-            Column(children: [
-              RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
-              RaisedButton(
-                  child: Text("Send"),
-                  onPressed: () => ResourceService.exchangeFacebook(idToken)),
-            ]),
-            Column(children: [
-              RaisedButton(
-                  child: Text("Warehourser"), onPressed: _authWarehourser),
-              RaisedButton(
-                  child: Text("Send"),
-                  onPressed: () => ResourceService.exchangeWarehouser(idToken)),
-            ]),
-          ],
-        ),
-        Card(
-            child: ListTile(
-          title: Text("idToken"),
-          subtitle: Text(idToken),
-        )),
-        Card(
-            child: ListTile(
-          title: Text("accessToken"),
-          subtitle: Text(accessToken),
-        )),
-        Card(
-            child: ListTile(
-          title: Text("userId"),
-          subtitle: Text(userId),
-        )),
-        Card(
-            child: ListTile(
-          title: Text("message"),
-          subtitle: Text(message),
-        )),
-      ]),
+      body: SingleChildScrollView(
+        child: Column(children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Column(children: [
+                RaisedButton(child: Text("Google"), onPressed: _authGoogle),
+                RaisedButton(
+                    child: Text("Send"),
+                    onPressed: () => ResourceService.exchangeGoogle(idToken)),
+              ]),
+              Column(children: [
+                RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
+                RaisedButton(
+                    child: Text("Send"),
+                    onPressed: () => ResourceService.exchangeFacebook(idToken)),
+              ]),
+              Column(children: [
+                RaisedButton(
+                    child: Text("Warehourser"), onPressed: _authWarehourser),
+              ]),
+            ],
+          ),
+          Card(
+              child: ListTile(
+            title: Text("User ID"),
+            subtitle: Text(user != null ? user.id : "Unknown"),
+          )),
+          Card(
+              child: ListTile(
+            title: Text("User Email"),
+            subtitle: Text(user != null ? user.email : "Unknown"),
+          )),
+          Card(
+              child: ListTile(
+            title: Text("User Role"),
+            subtitle: Text(user != null ? user.role : "Unknown"),
+          )),
+          Card(
+              child: ListTile(
+            title: Text("idToken"),
+            subtitle: Text(idToken),
+          )),
+          Card(
+              child: ListTile(
+            title: Text("accessToken"),
+            subtitle: Text(accessToken),
+          )),
+          Card(
+              child: ListTile(
+            title: Text("message"),
+            subtitle: Text(message),
+          )),
+        ]),
+      ),
     );
   }
 }

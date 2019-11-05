@@ -28,12 +28,13 @@ class AuthorizationService {
     }
   }
 
-  static Future<AuthorizationTokenResponse> authenticateAndToken() async {
+  static Future<AuthorizationTokenResponse> authenticateWarehouser() async {
+    print(Uri.https(publicAuthority, '/').toString());
     return await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
       "warehouser",
       "com.stasbar.warehouser:/oauth2redirect",
       issuer: Uri.https(publicAuthority, '/').toString(),
-      scopes: ['openid', 'offline', 'photos.read'],
+      scopes: ['openid', 'offline'],
     ));
   }
 
