@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -59,6 +60,17 @@ type wellknownWarehouser struct {
 	FrontchannelLogoutSupported        bool     `json:"frontchannel_logout_supported"`
 	FrontchannelLogoutSessionSupported bool     `json:"frontchannel_logout_session_supported"`
 	EndSessionEndpoint                 string   `json:"end_session_endpoint"`
+}
+
+type TokenIntrospection struct {
+	Active    bool   `json:"active"`
+	Scope     string `json:"scope"`
+	ClientID  string `json:"client_id"`
+	Sub       string `json:"sub"`
+	Exp       int    `json:"exp"`
+	Iat       int    `json:"iat"`
+	Iss       string `json:"iss"`
+	TokenType string `json:"token_type"`
 }
 
 var sampleProducts = []Product{
@@ -119,6 +131,7 @@ func authFacebook(fbAppAccessToken string) httprouter.Handle {
 		}
 		log.Println(debugToken)
 		// TODO test
+		// TODO return json { accessToken: "..." }
 	}
 }
 
@@ -161,7 +174,7 @@ func authGoogle(warehouserWellknown *wellknown, warehouserJwks string) httproute
 			fmt.Fprint(w, err)
 		}
 
-		// TODO exchange code for access token and ID Token.
+		// TODO return json { accessToken: "..." }
 	}
 }
 func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle {
@@ -185,6 +198,13 @@ func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle 
 
 		accessToken := params["accessToken"][0]
 		tokenInfo, err := getJsonMapAuthenticated(wellknown.UserinfoEndpoint, accessToken)
+		log.Println(tokenInfo)
+		introspect, err := getTokenIntrospection(accessToken)
+		if err != nil {
+			log.Println(err)
+		}
+		log.Printf("introspect: %v\n", introspect)
+
 		if err != nil {
 			log.Println(err)
 			fmt.Fprint(w, err)
@@ -210,6 +230,34 @@ func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle 
 			fmt.Fprint(w, string(user))
 		}
 	}
+}
+
+func getTokenIntrospection(accessToken string) (*TokenIntrospection, error) {
+	data := url.Values{}
+	data.Set("token", accessToken)
+
+	req, err := http.NewRequest("POST", "https://home.stasbar.com:9001/oauth2/introspect", strings.NewReader(data.Encode()))
+	if err != nil {
+		return nil, err
+	}
+	req.Header = map[string][]string{
+		"Content-Type": []string{"application/x-www-form-urlencoded"},
+		"Accept":       []string{"application/json"},
+	}
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+
+	body, readErr := ioutil.ReadAll(res.Body)
+	if readErr != nil {
+		return nil, readErr
+	}
+
+	tokenIntrospection := new(TokenIntrospection)
+	if err := json.Unmarshal(body, tokenIntrospection); err != nil {
+		return nil, err
+	}
+	return tokenIntrospection, nil
 }
 
 func verifyGoogleToken(tokenMap map[string]string) error {
