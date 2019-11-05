@@ -85,7 +85,7 @@ func main() {
 	router.DELETE("/products/:id", logger(deleteProduct))
 	router.PATCH("/deltaQuantity/:id", logger(deltaQuantity))
 	router.POST("/auth/google", logger(authGoogle(warehouserWellknown, googleJwks)))
-	router.POST("/auth/warehouser", logger(authWarehouser(warehouserWellknown, warehouserJwks)))
+	router.POST("/currentUser", logger(currentUser(warehouserWellknown, warehouserJwks)))
 	router.POST("/auth/facebook", logger(authFacebook(fbAppAccessToken)))
 	sslCert := os.Getenv("STASBAR_SSL_CERT")
 	sslKey := os.Getenv("STASBAR_SSL_KEY")
@@ -164,16 +164,18 @@ func authGoogle(warehouserWellknown *wellknown, warehouserJwks string) httproute
 		// TODO exchange code for access token and ID Token.
 	}
 }
-func authWarehouser(wellknown *wellknown, warehouserJwks string) httprouter.Handle {
+func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			fmt.Fprint(w, err)
 			return
 		}
 		params, err := url.ParseQuery(string(body))
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
+			fmt.Fprint(w, err)
 			return
 		}
 		fmt.Println("Query strings")
@@ -181,57 +183,33 @@ func authWarehouser(wellknown *wellknown, warehouserJwks string) httprouter.Hand
 			fmt.Printf(" %s = %v\n", key, value)
 		}
 
-		jwtToken := params["tokenId"][0]
-		url := wellknown.UserinfoEndpoint
-		tokenInfo, err := getJsonMapAuthenticated(url, jwtToken)
-		// TODO do it localy
-		// https://developers.google.com/identity/protocols/OpenIDConnect#validatinganidtoken
-		// 1. Verify signature based on googleCerts
-		// jwt.Parse(jwtToken, googleCerts)
+		accessToken := params["accessToken"][0]
+		tokenInfo, err := getJsonMapAuthenticated(wellknown.UserinfoEndpoint, accessToken)
 		if err != nil {
 			log.Println(err)
+			fmt.Fprint(w, err)
+			return
 		}
+
 		formattedJson, err := json.MarshalIndent(tokenInfo, "", "  ")
 		if err != nil {
 			log.Println(err)
+			fmt.Fprint(w, err)
+			return
 		}
 		log.Println(string(formattedJson))
 
-		err = verifyWarehouserToken(tokenInfo, wellknown)
-		if err != nil {
+		if user, err := json.Marshal(map[string]string{
+			"id":    tokenInfo["sid"],
+			"email": tokenInfo["sub"],
+			"role":  "employee", // TODO how to get this one ? idTokenExtra ?
+		}); err != nil {
+			log.Println(err)
 			fmt.Fprint(w, err)
-			log.Fatal(err)
+		} else {
+			fmt.Fprint(w, string(user))
 		}
-
-		// TODO exchange code for access token and ID Token.
 	}
-}
-
-func verifyWarehouserToken(tokenMap map[string]string, wellknown *wellknown) error {
-	iss, ok := tokenMap["iss"]
-	if !ok {
-		log.Println("could not find iss field in id_token")
-	}
-	if iss != wellknown.Issuer {
-		log.Printf("Invalid iss %s\n", iss)
-	}
-
-	expStr, ok := tokenMap["exp"]
-	if !ok {
-		return errors.New("could not find exp field in id_token")
-	}
-
-	exp, err := strconv.ParseInt(expStr, 10, 64)
-	if err != nil {
-		return errors.New("exp is not int")
-	}
-	if exp < time.Now().Unix() {
-		return errors.New("token expired")
-	}
-	// 2. check if iss is https://accounts.google.com or accounts.google.com
-	// 3. ckeck of aud is app client id
-	// 4. exp is not past
-	return nil
 }
 
 func verifyGoogleToken(tokenMap map[string]string) error {
@@ -367,8 +345,12 @@ func getJsonAuthenticated(url string, outObj interface{}, bearerToken string) er
 		log.Println(err)
 		return err
 	}
-	req.Header.Set("User-Agent", "warehouser-resource")
-	req.Header.Set("Authentication", fmt.Sprintf("Bearer %s", bearerToken))
+
+	req.Header = map[string][]string{
+		"Accept":        []string{"application/json"},
+		"Authorization": []string{fmt.Sprintf("Bearer %s", bearerToken)},
+		"User-Agent":    []string{"warehouser-resource"},
+	}
 
 	log.Println(url)
 	res, getErr := client.Do(req)
