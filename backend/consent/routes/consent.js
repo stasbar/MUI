@@ -33,12 +33,8 @@ router.get('/', csrfProtection, function (req, res, next) {
 
           // The session allows us to set session data for id and access tokens
           session: {
-            // This data will be available when introspecting the token. Try to avoid sensitive information here,
-            // unless you limit who can introspect tokens.
-            // access_token: { foo: 'bar' },
-
-            // This data will be available in the ID token.
-            // id_token: { baz: 'bar' },
+          access_token: { role: response.subject.split("@")[0] },
+          id_token: { role: response.subject.split("@")[0] },
           }
         }).then(function (response) {
           // All we need to do now is to redirect the user back to hydra!
@@ -57,7 +53,7 @@ router.get('/', csrfProtection, function (req, res, next) {
         client: response.client,
       });
     })
-    // This will handle any error that happens when making HTTP calls to hydra
+  // This will handle any error that happens when making HTTP calls to hydra
     .catch(function (error) {
       next(error);
     });
@@ -78,7 +74,7 @@ router.post('/', csrfProtection, function (req, res, next) {
         // All we need to do now is to redirect the browser back to hydra!
         res.redirect(response.redirect_to);
       })
-      // This will handle any error that happens when making HTTP calls to hydra
+    // This will handle any error that happens when making HTTP calls to hydra
       .catch(function (error) {
         next(error);
       });
@@ -100,12 +96,8 @@ router.post('/', csrfProtection, function (req, res, next) {
 
         // The session allows us to set session data for id and access tokens
         session: {
-          // This data will be available when introspecting the token. Try to avoid sensitive information here,
-          // unless you limit who can introspect tokens.
-          // access_token: { foo: 'bar' },
-
-          // This data will be available in the ID token.
-          // id_token: { baz: 'bar' },
+          access_token: { role: response.subject.split("@")[0] },
+          id_token: { role: response.subject.split("@")[0] },
         },
 
         // ORY Hydra checks if requested audiences are allowed by the client, so we can simply echo this.
@@ -123,7 +115,7 @@ router.post('/', csrfProtection, function (req, res, next) {
           res.redirect(response.redirect_to);
         })
     })
-    // This will handle any error that happens when making HTTP calls to hydra
+  // This will handle any error that happens when making HTTP calls to hydra
     .catch(function (error) {
       next(error);
     });
