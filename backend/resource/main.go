@@ -122,7 +122,7 @@ func authFacebook(fbAppAccessToken string) httprouter.Handle {
 	}
 }
 
-func authGoogle(warehouserWellknown *wellknown, warehouserJwks map[string]string) httprouter.Handle {
+func authGoogle(warehouserWellknown *wellknown, warehouserJwks string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -147,7 +147,8 @@ func authGoogle(warehouserWellknown *wellknown, warehouserJwks map[string]string
 		// 1. Verify signature based on googleCerts
 		// jwt.Parse(jwtToken, googleCerts)
 		if err != nil {
-			log.Println(err)
+			log.Println("Failed to prase google tokenInfo")
+			log.Println(err.Error())
 		}
 		formattedJson, err := json.MarshalIndent(tokenInfo, "", "  ")
 		if err != nil {
@@ -158,13 +159,12 @@ func authGoogle(warehouserWellknown *wellknown, warehouserJwks map[string]string
 		err = verifyGoogleToken(tokenInfo)
 		if err != nil {
 			fmt.Fprint(w, err)
-			log.Fatal(err)
 		}
 
 		// TODO exchange code for access token and ID Token.
 	}
 }
-func authWarehouser(wellknown *wellknown, warehouserJwks map[string]string) httprouter.Handle {
+func authWarehouser(wellknown *wellknown, warehouserJwks string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
@@ -271,11 +271,12 @@ func getWellknown(publicUrl string) *wellknown {
 	return wellknownObj
 }
 
-func getJwks(wellknown *wellknown) map[string]string {
-	jwks, err := getJsonMap(wellknown.JwksURI)
+func getJwks(wellknown *wellknown) string {
+	jwks, err := getString(wellknown.JwksURI)
 	if err != nil {
+		log.Println("Failed to parse jwks")
 		log.Fatal(err)
-		return nil
+		return ""
 	}
 	return jwks
 }
@@ -297,6 +298,28 @@ func toJson(r io.ReadCloser) (map[string]string, error) {
 func getJsonMap(url string) (map[string]string, error) {
 	jsonMap := map[string]string{}
 	return jsonMap, getJson(url, &jsonMap)
+}
+
+func getString(url string) (string, error) {
+	client := http.Client{
+		Timeout: time.Second * 2,
+	}
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	req.Header.Set("User-Agent", "warehouser-resource")
+
+	log.Println(url)
+	res, getErr := client.Do(req)
+	if getErr != nil {
+		log.Println(getErr)
+		return "", getErr
+	}
+
+	body, readErr := ioutil.ReadAll(res.Body)
+	return string(body), readErr
 }
 
 func getJson(url string, outObj interface{}) error {

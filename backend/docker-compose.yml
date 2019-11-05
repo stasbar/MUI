@@ -7,7 +7,7 @@ services:
     build: ./consent
     env_file: consent/.env
     environment:
-      HYDRA_ADMIN_URL: http://warehouser-hydra:4445
+      HYDRA_ADMIN_URL: https://warehouser-hydra:4445
       NODE_TLS_REJECT_UNAUTHORIZED: 0
       STASBAR_SSL_CERT: "${STASBAR_SSL_CERT}"
       STASBAR_SSL_KEY: "${STASBAR_SSL_KEY}"
