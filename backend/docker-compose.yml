@@ -1,0 +1,66 @@
+version: '3'
+
+services:
+
+  consent:
+    container_name: warehouser-consent
+    build: ./consent
+    env_file: consent/.env
+    environment:
+      HYDRA_ADMIN_URL: http://warehouser-hydra:4445
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
+      STASBAR_SSL_CERT: "${STASBAR_SSL_CERT}"
+      STASBAR_SSL_KEY: "${STASBAR_SSL_KEY}"
+      STASBAR_SSL_CA: "${STASBAR_SSL_CA}"
+    ports:
+      - "${PORT_CONSENT}:3000"
+    volumes:
+      - "${STASBAR_SSL_DIR}:${STASBAR_SSL_DIR}"
+    restart: unless-stopped
+
+  db:
+    container_name: warehouser-db
+    image: postgres
+    environment:
+      POSTGRES_USER: "${POSTGRES_USER}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+      POSTGRES_DB: "${POSTGRES_DB}"
+
+  hydra:
+    container_name: warehouser-hydra
+    image: oryd/hydra
+    command: serve all
+    environment:
+      SECRETS_SYSTEM: "${SECRETS_SYSTEM}"
+      DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@warehouser-db:5432/${POSTGRES_DB}?sslmode=disable"
+      URLS_SELF_ISSUER: "https://home.stasbar.com:${PORT_HYDRA_PUBLIC}"
+      URLS_CONSENT: "https://home.stasbar.com:${PORT_CONSENT}/consent"
+      URLS_LOGIN: "https://home.stasbar.com:${PORT_CONSENT}/login"
+      SERVE_TLS_KEY_PATH: "${STASBAR_SSL_KEY}"
+      SERVE_TLS_CERT_PATH: "${STASBAR_SSL_CA}"
+    ports:
+      - "${PORT_HYDRA_PUBLIC}:4444"
+      - "${PORT_HYDRA_PRIVATE}:4445"
+    volumes:
+      - "${STASBAR_SSL_DIR}:${STASBAR_SSL_DIR}"
+    restart: unless-stopped
+    depends_on: 
+      - db
+
+  resource:
+    container_name: warehouser-resource
+    build: ./resource
+    env_file: resource/.env
+    environment:
+      STASBAR_SSL_CERT: "${STASBAR_SSL_CERT}"
+      STASBAR_SSL_KEY: "${STASBAR_SSL_KEY}"
+      STASBAR_SSL_CA: "${STASBAR_SSL_CA}"
+      WAREHOURSER_CLIENT_ID: WAREHOURSER_CLIENT_ID
+      WAREHOURSER_CLIENT_SECRET: WAREHOURSER_CLIENT_SECRET
+    ports:
+      - "${PORT_RESOURCE}:${PORT_RESOURCE}"
+    volumes:
+      - "${STASBAR_SSL_DIR}:${STASBAR_SSL_DIR}"
+    restart: unless-stopped
+    depends_on:
+      - hydra
