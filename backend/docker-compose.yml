@@ -50,13 +50,12 @@ services:
   resource:
     container_name: warehouser-resource
     build: ./resource
-    env_file: resource/.env
     environment:
       STASBAR_SSL_CERT: "${STASBAR_SSL_CERT}"
       STASBAR_SSL_KEY: "${STASBAR_SSL_KEY}"
       STASBAR_SSL_CA: "${STASBAR_SSL_CA}"
-      WAREHOURSER_CLIENT_ID: WAREHOURSER_CLIENT_ID
-      WAREHOURSER_CLIENT_SECRET: WAREHOURSER_CLIENT_SECRET
+      WAREHOURSER_CLIENT_ID: "${WAREHOURSER_CLIENT_ID}"
+      WAREHOURSER_CLIENT_SECRET: "${WAREHOURSER_CLIENT_SECRET}"
     ports:
       - "${PORT_RESOURCE}:${PORT_RESOURCE}"
     volumes:
