@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var url = require('url');
+var moment = require('moment');
 var hydra = require('../services/hydra')
 
 // Sets up csrf protection
@@ -13,6 +14,7 @@ router.get('/', csrfProtection, function (req, res, next) {
 
   // The challenge is used to fetch information about the login request from ORY Hydra.
   var challenge = query.login_challenge;
+  var googleIdToken = query.google_id_token;
 
   hydra.getLoginRequest(challenge)
   // This will be called if the HTTP request was successful
@@ -32,13 +34,43 @@ router.get('/', csrfProtection, function (req, res, next) {
           // All we need to do now is to redirect the user back to hydra!
           res.redirect(response.redirect_to);
         });
-      }
+      } else if (googleIdToken) {
+        // TODO perform tokenId validation and if everything is ok, then set
+        
+        const url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + googleIdToken
 
-      // If authentication can't be skipped we MUST show the login UI.
-      res.render('login', {
-        csrfToken: req.csrfToken(),
-        challenge: challenge,
-      });
+        // TODO this is pseudocode 
+        fetch(url).then((token) =>{
+          validateGoogleToken(token)  
+        }).then(() => {
+          // Seems like the user authenticated via google
+          hydra.acceptLoginRequest(challenge, {
+            // Subject is an alias for user ID. A subject can be a random string, a UUID, an email address, ....
+            subject: email,
+            // When the session expires, in seconds. Set this to 0 so it will never expire.
+            remember_for: 3600,
+            // Sets which "level" (e.g. 2-factor authentication) of authentication the user has. The value is really arbitrary
+            // and optional. In the context of OpenID Connect, a value of 0 indicates the lowest authorization level.
+            // acr: '0',
+          })
+            .then(function (response) {
+              // All we need to do now is to redirect the user back to hydra!
+              res.redirect(response.redirect_to);
+            })
+          // This will handle any error that happens when making HTTP calls to hydra
+            .catch(function (error) {
+              next(error);
+            });
+        }) // google token verification failed
+          .catch(console.err);
+
+      }else{
+        // If authentication can't be skipped we MUST show the login UI.
+        res.render('login', {
+          csrfToken: req.csrfToken(),
+          challenge: challenge,
+        });
+      }
     })
     // This will handle any error that happens when making HTTP calls to hydra
     .catch(function (error) {
@@ -50,9 +82,15 @@ router.post('/', csrfProtection, function (req, res, next) {
   // The challenge is now a hidden input field, so let's take it from the request body instead
   var challenge = req.body.challenge;
 
+  let email = req.body.email;
+  let password = req.body.passowrd;
+
+  let isValidEmployee = login === "employee@warehouser.com" && password === "password";
+  let isValidManager = login === "manager@warehouser.com" && password === "password";
+  let isValidAdmin = login === "stasbar1995@gmail.com" && password === "password";
   // Let's check if the user provided valid credentials. Of course, you'd use a database or some third-party service
   // for this!
-  if (!(req.body.email === 'foo@bar.com' && req.body.password === 'foobar')) {
+  if (!isValidEmployee && !isValidManager && !isValidAdmin) {
     // Looks like the user provided invalid credentials, let's show the ui again...
 
     res.render('login', {
@@ -68,7 +106,7 @@ router.post('/', csrfProtection, function (req, res, next) {
   // Seems like the user authenticated! Let's tell hydra...
   hydra.acceptLoginRequest(challenge, {
     // Subject is an alias for user ID. A subject can be a random string, a UUID, an email address, ....
-    subject: 'foo@bar.com',
+    subject: email,
 
     // This tells hydra to remember the browser and automatically authenticate the user in future requests. This will
     // set the "skip" parameter in the other route to true on subsequent requests!
@@ -105,4 +143,21 @@ router.post('/', csrfProtection, function (req, res, next) {
   //   });
 });
 
+function validateGoogleToken(token){
+  const iss = token.iss;
+  if(!iss){
+    throw new Error("could not find iss field in id_token");
+  }
+	if (iss !== "https://accounts.google.com" && iss !== "accounts.google.com") {
+    throw new Error("Invalid iss %s\n", iss);
+	}
+
+  const exp = token.exp
+	if (!exp) {
+    throw new Error("could not find exp field in id_token")
+	}
+	if (Number(exp) < moment()) {
+    throw new Error("token expired")
+	}
+}
 module.exports = router;
