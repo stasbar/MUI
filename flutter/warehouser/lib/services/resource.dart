@@ -45,7 +45,7 @@ class ResourceService {
     final response = await ioClient.post(url, body: {'tokenId': tokenId});
 
     if (response.statusCode == 200) {
-      return json.decode(response.body).token;
+      return json.decode(response.body).accessToken;
     } else {
       throw Exception('Failed to exchange id for access token');
     }

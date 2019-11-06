@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:warehouser/items.dart';
 
-import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'model/User.dart';
 import 'services/resource.dart';
 import 'services/authorization.dart';
@@ -52,29 +51,17 @@ class _MyHomePageState extends State<MyHomePage> {
   void _authGoogle() async {
     var result = await AuthorizationService.authenticateGoogle();
     setState(() {
-      idToken = result.idToken;
+      accessToken = result.accessToken;
     });
+    _fetchCurrentUser();
   }
 
   void _authFacebook() async {
     var result = await AuthorizationService.authenticateFacebook();
-    switch (result.status) {
-      case FacebookLoginStatus.loggedIn:
-        setState(() {
-          idToken = result.accessToken.token;
-        });
-        break;
-      case FacebookLoginStatus.cancelledByUser:
-        setState(() {
-          message = "cancelByUser";
-        });
-        break;
-      case FacebookLoginStatus.error:
-        setState(() {
-          message = result.errorMessage;
-        });
-        break;
-    }
+    setState(() {
+      accessToken = result.accessToken;
+    });
+    _fetchCurrentUser();
   }
 
   void _authWarehourser() async {
@@ -86,9 +73,14 @@ class _MyHomePageState extends State<MyHomePage> {
       idToken = result.idToken;
       accessToken = result.accessToken;
     });
+
+    _fetchCurrentUser();
+  }
+
+  void _fetchCurrentUser() async {
     var userResult = await ResourceService.currentUser(accessToken);
     setState(() {
-      user = userResult ;
+      user = userResult;
     });
   }
 
@@ -116,15 +108,9 @@ class _MyHomePageState extends State<MyHomePage> {
             children: [
               Column(children: [
                 RaisedButton(child: Text("Google"), onPressed: _authGoogle),
-                RaisedButton(
-                    child: Text("Send"),
-                    onPressed: () => ResourceService.exchangeGoogle(idToken)),
               ]),
               Column(children: [
                 RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
-                RaisedButton(
-                    child: Text("Send"),
-                    onPressed: () => ResourceService.exchangeFacebook(idToken)),
               ]),
               Column(children: [
                 RaisedButton(

@@ -30,6 +30,7 @@ class AuthorizationService {
 
   static Future<AuthorizationTokenResponse> authenticateWarehouser() async {
     print(Uri.https(publicAuthority, '/').toString());
+    // why this way ? https://www.ory.sh/oauth2-for-mobile-app-spa-browser/
     return await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
       "warehouser",
       "com.stasbar.warehouser:/oauth2redirect",
@@ -38,10 +39,10 @@ class AuthorizationService {
     ));
   }
 
-  static Future<AuthorizationTokenResponse> authenticateGoogle() {
+  static Future<AuthorizationTokenResponse> authenticateGoogle() async {
     final googleClientId =
         "960807507840-ts3874na6r9h6ctrp5mig0fjgnjoc020.apps.googleusercontent.com";
-    return appAuth.authorizeAndExchangeCode(
+    final authToken = await appAuth.authorizeAndExchangeCode(
       AuthorizationTokenRequest(
         googleClientId,
         'com.stasbar.warehouser:/oauth2redirect',
@@ -49,9 +50,38 @@ class AuthorizationService {
         scopes: ["openid", "email", "profile"],
       ),
     );
+
+    // why this way ? https://www.ory.sh/oauth2-for-mobile-app-spa-browser/
+    print(Uri.https(publicAuthority, '/').toString());
+    return await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
+      "warehouser",
+      "com.stasbar.warehouser:/oauth2redirect",
+      additionalParameters: {
+        "google_id_token": authToken.idToken,
+      },
+      issuer: Uri.https(publicAuthority, '/').toString(),
+      scopes: ['openid', 'offline'],
+    ));
   }
 
-  static Future<FacebookLoginResult> authenticateFacebook() {
-    return FacebookLogin().logIn(['email']);
+  static Future<AuthorizationTokenResponse> authenticateFacebook() async {
+    final result = await FacebookLogin().logIn(['email']);
+    if (result.status == FacebookLoginStatus.cancelledByUser)
+      throw new Exception("Cancel by user");
+
+    if (result.status == FacebookLoginStatus.error)
+      throw new Exception(result.errorMessage);
+
+    // why this way ? https://www.ory.sh/oauth2-for-mobile-app-spa-browser/
+    print(Uri.https(publicAuthority, '/').toString());
+    return appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
+      "warehouser",
+      "com.stasbar.warehouser:/oauth2redirect",
+      additionalParameters: {
+        "facebook_access_token": result.accessToken.token,
+      },
+      issuer: Uri.https(publicAuthority, '/').toString(),
+      scopes: ['openid', 'offline'],
+    ));
   }
 }
