@@ -1,24 +1,26 @@
-var express = require('express');
-var router = express.Router();
-var url = require('url');
-var moment = require('moment');
-var hydra = require('../services/hydra')
+const express = require('express');
+const router = express.Router();
+const url = require('url');
+const moment = require('moment');
+const hydra = require('../services/hydra')
+const { URLSearchParams } = require('url');
 
 // Sets up csrf protection
-var csrf = require('csurf');
-var csrfProtection = csrf({ cookie: true });
+const csrf = require('csurf');
+const csrfProtection = csrf({ cookie: true });
 
 router.get('/', csrfProtection, function (req, res, next) {
   // Parses the URL query
-  var query = url.parse(req.url, true).query;
+  const query = url.parse(req.url, true).query;
 
   // The challenge is used to fetch information about the login request from ORY Hydra.
-  var challenge = query.login_challenge;
-  var googleIdToken = query.google_id_token;
+  const challenge = query.login_challenge;
+  const googleIdToken = query.google_id_token;
 
   hydra.getLoginRequest(challenge)
   // This will be called if the HTTP request was successful
     .then(function (response) {
+      console.dir(response);
       // If hydra was already able to authenticate the user, skip will be true and we do not need to re-authenticate
       // the user.
       if (response.skip) {
@@ -36,25 +38,27 @@ router.get('/', csrfProtection, function (req, res, next) {
         });
       } else if (googleIdToken) {
         // TODO perform tokenId validation and if everything is ok, then set
-        
-        const url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + googleIdToken
+        const params = new URLSearchParams();
+        params.append('id_token', googleIdToken);
+        const url = "https://oauth2.googleapis.com/tokeninfo"
 
         // TODO this is pseudocode 
-        fetch(url).then((token) =>{
-          validateGoogleToken(token)  
-        }).then(() => {
-          // Seems like the user authenticated via google
-          hydra.acceptLoginRequest(challenge, {
-            // Subject is an alias for user ID. A subject can be a random string, a UUID, an email address, ....
-            subject: email,
-            // When the session expires, in seconds. Set this to 0 so it will never expire.
-            remember_for: 3600,
-            // Sets which "level" (e.g. 2-factor authentication) of authentication the user has. The value is really arbitrary
-            // and optional. In the context of OpenID Connect, a value of 0 indicates the lowest authorization level.
-            // acr: '0',
-          })
-            .then(function (response) {
-              // All we need to do now is to redirect the user back to hydra!
+        fetch(url, { method: 'POST', body: params })
+          .then(res => res.json())
+          .then(token =>  validateGoogleToken(token))
+          .then(() => {
+            // Seems like the user authenticated via google
+            hydra.acceptLoginRequest(challenge, {
+              // Subject is an alias for user ID. A subject can be a random string, a UUID, an email address, ....
+              subject: email,
+              // When the session expires, in seconds. Set this to 0 so it will never expire.
+              remember_for: 3600,
+              // Sets which "level" (e.g. 2-factor authentication) of authentication the user has. The value is really arbitrary
+              // and optional. In the context of OpenID Connect, a value of 0 indicates the lowest authorization level.
+              // acr: '0',
+            })
+              .then(function (response) {
+                // All we need to do now is to redirect the user back to hydra!
               res.redirect(response.redirect_to);
             })
           // This will handle any error that happens when making HTTP calls to hydra
@@ -80,14 +84,14 @@ router.get('/', csrfProtection, function (req, res, next) {
 
 router.post('/', csrfProtection, function (req, res, next) {
   // The challenge is now a hidden input field, so let's take it from the request body instead
-  var challenge = req.body.challenge;
+  const challenge = req.body.challenge;
 
-  let email = req.body.email;
-  let password = req.body.passowrd;
+  const email = req.body.email;
+  const password = req.body.passowrd;
 
-  let isValidEmployee = login === "employee@warehouser.com" && password === "password";
-  let isValidManager = login === "manager@warehouser.com" && password === "password";
-  let isValidAdmin = login === "stasbar1995@gmail.com" && password === "password";
+  const isValidEmployee = login === "employee@warehouser.com" && password === "password";
+  const isValidManager = login === "manager@warehouser.com" && password === "password";
+  const isValidAdmin = login === "stasbar1995@gmail.com" && password === "password";
   // Let's check if the user provided valid credentials. Of course, you'd use a database or some third-party service
   // for this!
   if (!isValidEmployee && !isValidManager && !isValidAdmin) {
@@ -156,7 +160,7 @@ function validateGoogleToken(token){
 	if (!exp) {
     throw new Error("could not find exp field in id_token")
 	}
-	if (Number(exp) < moment()) {
+	if (Number(exp) < moment().unix()) {
     throw new Error("token expired")
 	}
 }
