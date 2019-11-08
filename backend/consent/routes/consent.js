@@ -33,8 +33,7 @@ router.get('/', csrfProtection, function (req, res, next) {
 
           // The session allows us to set session data for id and access tokens
           session: {
-          access_token: { role: response.subject.split("@")[0] },
-          id_token: { role: response.subject.split("@")[0] },
+            id_token: { role: response.subject.split("@")[0] === 'manager' ? 'manager' : 'employee' },
           }
         }).then(function (response) {
           // All we need to do now is to redirect the user back to hydra!
@@ -96,8 +95,7 @@ router.post('/', csrfProtection, function (req, res, next) {
 
         // The session allows us to set session data for id and access tokens
         session: {
-          access_token: { role: response.subject.split("@")[0] },
-          id_token: { role: response.subject.split("@")[0] },
+            id_token: { role: response.subject.split("@")[0] === 'manager' ? 'manager' : 'employee' },
         },
 
         // ORY Hydra checks if requested audiences are allowed by the client, so we can simply echo this.
