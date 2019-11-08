@@ -198,18 +198,14 @@ func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle 
 
 		accessToken := params["accessToken"][0]
 		tokenInfo, err := getJsonMapAuthenticated(wellknown.UserinfoEndpoint, accessToken)
-		log.Println(tokenInfo)
+		log.Printf("tokenInfo %v\n", tokenInfo)
 		introspect, err := getTokenIntrospection(accessToken)
-		if err != nil {
-			log.Println(err)
-		}
-		log.Printf("introspect: %v\n", introspect)
-
 		if err != nil {
 			log.Println(err)
 			fmt.Fprint(w, err)
 			return
 		}
+		log.Printf("introspect: %v\n", introspect)
 
 		formattedJson, err := json.MarshalIndent(tokenInfo, "", "  ")
 		if err != nil {
@@ -217,16 +213,17 @@ func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle 
 			fmt.Fprint(w, err)
 			return
 		}
-		log.Println(string(formattedJson))
+		log.Printf("formattedJson: %s\n", string(formattedJson))
 
 		if user, err := json.Marshal(map[string]string{
 			"id":    tokenInfo["sid"],
 			"email": tokenInfo["sub"],
-			"role":  "employee", // TODO how to get this one ? idTokenExtra ?
+			"role":  tokenInfo["role"], // TODO how to get this one ? idTokenExtra ?
 		}); err != nil {
 			log.Println(err)
 			fmt.Fprint(w, err)
 		} else {
+			log.Printf("user: %s", string(user))
 			fmt.Fprint(w, string(user))
 		}
 	}
