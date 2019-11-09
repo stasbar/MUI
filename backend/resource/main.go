@@ -71,6 +71,9 @@ type TokenIntrospection struct {
 	Iat       int    `json:"iat"`
 	Iss       string `json:"iss"`
 	TokenType string `json:"token_type"`
+	Ext       struct {
+		Role string `json:"role"`
+	} `json:"ext"`
 }
 
 var sampleProducts = []Product{
@@ -88,7 +91,6 @@ func main() {
 	googleWellknown := getWellknown("https://accounts.google.com")
 	warehouserWellknown := getWellknown("https://home.stasbar.com:9000")
 	googleJwks := getJwks(googleWellknown)
-	warehouserJwks := getJwks(warehouserWellknown)
 
 	router := httprouter.New()
 	router.GET("/products", logger(getAllProducts))
@@ -97,12 +99,9 @@ func main() {
 	router.DELETE("/products/:id", logger(deleteProduct))
 	router.PATCH("/deltaQuantity/:id", logger(deltaQuantity))
 	router.POST("/auth/google", logger(authGoogle(warehouserWellknown, googleJwks)))
-	router.POST("/currentUser", logger(currentUser(warehouserWellknown, warehouserJwks)))
+	router.GET("/currentUser", logger(currentUser))
 	router.POST("/auth/facebook", logger(authFacebook(fbAppAccessToken)))
-	sslCert := os.Getenv("STASBAR_SSL_CERT")
-	sslKey := os.Getenv("STASBAR_SSL_KEY")
-	httpsPort := os.Getenv("PORT_HTTPS")
-	log.Fatal(http.ListenAndServeTLS(":"+httpsPort, sslCert, sslKey, router))
+	log.Fatal(http.ListenAndServe(":80", router))
 }
 
 func getFacebookAppAccessToken() string {
@@ -177,55 +176,16 @@ func authGoogle(warehouserWellknown *wellknown, warehouserJwks string) httproute
 		// TODO return json { accessToken: "..." }
 	}
 }
-func currentUser(wellknown *wellknown, warehouserJwks string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Println(err)
-			fmt.Fprint(w, err)
-			return
-		}
-		params, err := url.ParseQuery(string(body))
-		if err != nil {
-			log.Println(err)
-			fmt.Fprint(w, err)
-			return
-		}
-		fmt.Println("Query strings")
-		for key, value := range params {
-			fmt.Printf(" %s = %v\n", key, value)
-		}
-
-		accessToken := params["accessToken"][0]
-		tokenInfo, err := getJsonMapAuthenticated(wellknown.UserinfoEndpoint, accessToken)
-		log.Printf("tokenInfo %v\n", tokenInfo)
-		introspect, err := getTokenIntrospection(accessToken)
-		if err != nil {
-			log.Println(err)
-			fmt.Fprint(w, err)
-			return
-		}
-		log.Printf("introspect: %v\n", introspect)
-
-		formattedJson, err := json.MarshalIndent(tokenInfo, "", "  ")
-		if err != nil {
-			log.Println(err)
-			fmt.Fprint(w, err)
-			return
-		}
-		log.Printf("formattedJson: %s\n", string(formattedJson))
-
-		if user, err := json.Marshal(map[string]string{
-			"id":    tokenInfo["sid"],
-			"email": tokenInfo["sub"],
-			"role":  tokenInfo["role"], // TODO how to get this one ? idTokenExtra ?
-		}); err != nil {
-			log.Println(err)
-			fmt.Fprint(w, err)
-		} else {
-			log.Printf("user: %s", string(user))
-			fmt.Fprint(w, string(user))
-		}
+func currentUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if user, err := json.Marshal(map[string]string{
+		"email": r.Header.Get("X-Email"),
+		"role":  r.Header.Get("X-Role"),
+	}); err != nil {
+		log.Println(err)
+		fmt.Fprint(w, err)
+	} else {
+		log.Printf("user: %s", string(user))
+		fmt.Fprint(w, string(user))
 	}
 }
 
@@ -249,6 +209,7 @@ func getTokenIntrospection(accessToken string) (*TokenIntrospection, error) {
 	if readErr != nil {
 		return nil, readErr
 	}
+	log.Printf("introspection body: %v\n", string(body))
 
 	tokenIntrospection := new(TokenIntrospection)
 	if err := json.Unmarshal(body, tokenIntrospection); err != nil {
@@ -424,7 +385,6 @@ func logger(next httprouter.Handle) httprouter.Handle {
 }
 
 func getAllProducts(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//TODO response json
 	json.NewEncoder(w).Encode(sampleProducts)
 }
 

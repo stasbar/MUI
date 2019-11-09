@@ -33,6 +33,7 @@ router.get('/', csrfProtection, function (req, res, next) {
 
           // The session allows us to set session data for id and access tokens
           session: {
+            access_token: { role: response.subject.split("@")[0] === 'manager' ? 'manager' : 'employee' },
             id_token: { role: response.subject.split("@")[0] === 'manager' ? 'manager' : 'employee' },
           }
         }).then(function (response) {
@@ -95,6 +96,7 @@ router.post('/', csrfProtection, function (req, res, next) {
 
         // The session allows us to set session data for id and access tokens
         session: {
+            access_token: { role: response.subject.split("@")[0] === 'manager' ? 'manager' : 'employee' },
             id_token: { role: response.subject.split("@")[0] === 'manager' ? 'manager' : 'employee' },
         },
 

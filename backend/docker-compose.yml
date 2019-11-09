@@ -51,15 +51,24 @@ services:
     container_name: warehouser-resource
     build: ./resource
     environment:
-      STASBAR_SSL_CERT: "${STASBAR_SSL_CERT}"
-      STASBAR_SSL_KEY: "${STASBAR_SSL_KEY}"
-      STASBAR_SSL_CA: "${STASBAR_SSL_CA}"
       WAREHOURSER_CLIENT_ID: "${WAREHOURSER_CLIENT_ID}"
       WAREHOURSER_CLIENT_SECRET: "${WAREHOURSER_CLIENT_SECRET}"
+    restart: unless-stopped
+    depends_on:
+      - hydra
+
+  oauth:
+    container_name: warehouser-oauthkeeper
+    build: ./oauthkeeper
+    command: --config /config.yaml serve
     ports:
       - "${PORT_RESOURCE}:${PORT_RESOURCE}"
+    environment:
+      SERVE_PROXY_PORT: "${PORT_RESOURCE}"
+      SERVE_PROXY_TLS_KEY_PATH: "${STASBAR_SSL_KEY}"
+      SERVE_PROXY_TLS_CERT_PATH: "${STASBAR_SSL_CA}"
     volumes:
       - "${STASBAR_SSL_DIR}:${STASBAR_SSL_DIR}"
     restart: unless-stopped
     depends_on:
-      - hydra
+      - resource

@@ -1,0 +1,27 @@
+access_rules:
+  repositories:
+    - file:///rules.yaml
+
+authenticators:
+  noop:
+    enabled: false
+  oauth2_introspection:
+    enabled: true
+    config: 
+      introspection_url: https://home.stasbar.com:9001/oauth2/introspect
+      scope_strategy: none
+
+authorizers:
+  allow:
+    enabled: true
+  deny:
+    enabled: true
+
+mutators:
+  header:
+    enabled: true
+    config:
+      headers: 
+        X-Email: "{{ print .Subject }}"
+        X-Role: "{{ print .Extra.role }}"
+
