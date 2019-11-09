@@ -36,9 +36,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String idToken = "";
   User user;
-  String accessToken = "";
   String message = "";
 
   void _pushSaved() {
@@ -48,39 +46,24 @@ class _MyHomePageState extends State<MyHomePage> {
     }));
   }
 
-  void _authGoogle() async {
-    var result = await AuthorizationService.authenticateGoogle();
-    setState(() {
-      accessToken = result.accessToken;
-    });
-    _fetchCurrentUser();
-  }
-
-  void _authFacebook() async {
-    var result = await AuthorizationService.authenticateFacebook();
-    setState(() {
-      accessToken = result.accessToken;
-    });
-    _fetchCurrentUser();
-  }
-
-  void _authWarehourser() async {
-    print("auth username password");
-    var result = await AuthorizationService.authenticateWarehouser();
-    print("result: ${result.accessToken}");
-    setState(() {
-      message = result.authorizationAdditionalParameters.toString();
-      idToken = result.idToken;
-      accessToken = result.accessToken;
-    });
-
-    _fetchCurrentUser();
+  Function _auth(Provider provider) {
+    return () async {
+      await AuthorizationService.authenticate(provider);
+      _fetchCurrentUser();
+    };
   }
 
   void _fetchCurrentUser() async {
-    var userResult = await ResourceService.currentUser(accessToken);
+    var userResult = await ResourceService.currentUser();
     setState(() {
       user = userResult;
+    });
+  }
+
+  void _logout() async {
+    await AuthorizationService.logout();
+    setState(() {
+      user = null;
     });
   }
 
@@ -107,22 +90,24 @@ class _MyHomePageState extends State<MyHomePage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               Column(children: [
-                RaisedButton(child: Text("Google"), onPressed: _authGoogle),
-              ]),
-              Column(children: [
-                RaisedButton(child: Text("Facebook"), onPressed: _authFacebook),
+                RaisedButton(
+                    child: Text("Google"), onPressed: _auth(Provider.GOOGLE)),
               ]),
               Column(children: [
                 RaisedButton(
-                    child: Text("Warehourser"), onPressed: _authWarehourser),
+                    child: Text("Facebook"),
+                    onPressed: _auth(Provider.FACEBOOK)),
+              ]),
+              Column(children: [
+                RaisedButton(
+                    child: Text("Warehourser"),
+                    onPressed: _auth(Provider.WAREHOUSER)),
+              ]),
+              Column(children: [
+                RaisedButton(child: Text("Logout"), onPressed: _logout),
               ]),
             ],
           ),
-          Card(
-              child: ListTile(
-            title: Text("User ID"),
-            subtitle: Text(user != null ? user.id : "Unknown"),
-          )),
           Card(
               child: ListTile(
             title: Text("User Email"),
@@ -132,16 +117,6 @@ class _MyHomePageState extends State<MyHomePage> {
               child: ListTile(
             title: Text("User Role"),
             subtitle: Text(user != null ? user.role : "Unknown"),
-          )),
-          Card(
-              child: ListTile(
-            title: Text("idToken"),
-            subtitle: Text(idToken),
-          )),
-          Card(
-              child: ListTile(
-            title: Text("accessToken"),
-            subtitle: Text(accessToken),
           )),
           Card(
               child: ListTile(

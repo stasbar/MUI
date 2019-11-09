@@ -9,6 +9,9 @@ class ResourceService {
   static int port = 1234;
   static String baseUrl = 'https://home.stasbar.com:$port';
 
+  static String accessToken;
+  static String refreshToken;
+
   static HttpClient httpClient = new HttpClient()
     ..badCertificateCallback =
     ((X509Certificate cert, String host, int port) => true);
@@ -18,7 +21,7 @@ class ResourceService {
 
   static Future<List<Product>> fetchProducts() async {
     final url = '$baseUrl/products';
-    final response = await ioClient.get(url);
+    final response = await ioClient.get(url, headers: {'Authorization': 'bearer $accessToken'});
 
     if (response.statusCode == 200) {
       final postsJson = json.decode(response.body);
@@ -51,10 +54,9 @@ class ResourceService {
     }
   }
 
-  static Future<User>currentUser(String accessToken) async {
+  static Future<User>currentUser() async {
     final url = '$baseUrl/currentUser';
-    final response = await ioClient.post(url, body: {'accessToken': accessToken});
-
+    final response = await ioClient.get(url, headers: {'Authorization': 'bearer $accessToken'});
     if (response.statusCode == 200) {
       return User.fromJson(json.decode(response.body));
     } else {
