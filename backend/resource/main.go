@@ -253,6 +253,7 @@ func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	for _, product := range sampleProducts {
 		if product.Id == id {
 			json.NewEncoder(w).Encode(product)
+			return
 		}
 	}
 }

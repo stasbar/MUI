@@ -3,7 +3,7 @@
     url: http://warehouser-resource
 
   match:
-    url: <https|http>://home.stasbar.com<:\d*|>/products
+    url: <https|http>://home.stasbar.com<:\d*|>/<.*>
     methods:
       - GET
 
@@ -22,30 +22,3 @@
         headers:
           X-Email: "{{ print .Subject }}"
           X-Role: "{{ print .Extra.role }}"
-
-
-- id: current-user
-  upstream:
-    url: http://warehouser-resource
-
-  match:
-    url: <https|http>://home.stasbar.com<:\d*|>/currentUser
-    methods:
-      - GET
-
-  authenticators:
-    - handler: oauth2_introspection
-      config: 
-        introspection_url: https://home.stasbar.com:9001/oauth2/introspect
-        scope_strategy: none
-
-  authorizer:
-    handler: allow
-
-  mutators:
-    - handler: header
-      config:
-        headers:
-          X-Email: "{{ print .Subject }}"
-          X-Role: "{{ print .Extra.role }}"
-

@@ -30,14 +30,14 @@ router.get('/', csrfProtection, async function (req, res, next) {
     } else if (facebookAccessToken ) {
       await authenticateWithFacebook(res, next, challenge, facebookAccessToken );
     }else{
-      renderLoginPage(req, challenge)
+      renderLoginPage(req, res, challenge)
     }
   }catch (error) {
     next(error);
   }
 });
 
-function renderLoginPage(req, challenge){
+function renderLoginPage(req, res, challenge){
   res.render('login', {
     csrfToken: req.csrfToken(),
     challenge: challenge,
