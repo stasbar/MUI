@@ -55,8 +55,6 @@ class AuthorizationService {
     );
 
     // why this way ? https://www.ory.sh/oauth2-for-mobile-app-spa-browser/
-    // TODO set explicitly oauth/login serach arguments to contain
-    // google_id_token
     print(Uri.https(publicAuthority, '/').toString());
     return await appAuth.authorizeAndExchangeCode(AuthorizationTokenRequest(
       "warehouser",
