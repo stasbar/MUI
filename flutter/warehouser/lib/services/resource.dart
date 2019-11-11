@@ -14,14 +14,15 @@ class ResourceService {
 
   static HttpClient httpClient = new HttpClient()
     ..badCertificateCallback =
-    ((X509Certificate cert, String host, int port) => true);
+        ((X509Certificate cert, String host, int port) => true);
 
   static IOClient ioClient = new IOClient(httpClient);
 
-
   static Future<List<Product>> fetchProducts() async {
     final url = '$baseUrl/products';
-    final response = await ioClient.get(url, headers: {'Authorization': 'bearer $accessToken'});
+    print(url);
+    final response = await ioClient
+        .get(url, headers: {'Authorization': 'bearer $accessToken'});
 
     if (response.statusCode == 200) {
       final postsJson = json.decode(response.body);
@@ -35,32 +36,43 @@ class ResourceService {
     }
   }
 
-  static Future<String> exchangeGoogle(String tokenId) async {
-    return _exchange('google', tokenId);
-  }
-
-  static Future<String> exchangeFacebook(String tokenId) async {
-    return _exchange('facebook', tokenId);
-  }
-
-  static Future<String> _exchange(String provider, String tokenId) async {
-    final url = '$baseUrl/auth/$provider';
-    final response = await ioClient.post(url, body: {'tokenId': tokenId});
-
+  static Future<Product> getProduct(String productId) async {
+    final url = '$baseUrl/products/$productId';
+    print(url);
+    final response = await ioClient
+        .get(url, headers: {'Authorization': 'bearer $accessToken'});
     if (response.statusCode == 200) {
-      return json.decode(response.body).accessToken;
+      return Product.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to exchange id for access token');
+      throw Exception(
+          'Failed to get product, response: ${response.statusCode}');
     }
   }
 
-  static Future<User>currentUser() async {
+  static updateProduct(String productId, Map<String, dynamic> update) async {
+    final url = '$baseUrl/products/$productId';
+    print(url);
+    final response = await ioClient.put(url,
+        body: json.encode(update),
+        headers: {'Authorization': 'bearer $accessToken'});
+    if (response.statusCode == 200) {
+      print(response.body);
+    } else {
+      throw Exception(
+          'Failed to get product, response: ${response.statusCode}');
+    }
+  }
+
+  static Future<User> currentUser() async {
     final url = '$baseUrl/currentUser';
-    final response = await ioClient.get(url, headers: {'Authorization': 'bearer $accessToken'});
+    print(url);
+    final response = await ioClient
+        .get(url, headers: {'Authorization': 'bearer $accessToken'});
     if (response.statusCode == 200) {
       return User.fromJson(json.decode(response.body));
     } else {
-      throw Exception('Failed to exchange id for access token');
+      throw Exception(
+          'Failed to get current user, response: ${response.statusCode}');
     }
   }
 }
