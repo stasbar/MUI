@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	_ "github.com/dgrijalva/jwt-go"
 	_ "github.com/joho/godotenv/autoload"
@@ -11,10 +10,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 )
 
@@ -87,95 +82,16 @@ var sampleProducts = []Product{
 }
 
 func main() {
-	fbAppAccessToken := getFacebookAppAccessToken()
-	googleWellknown := getWellknown("https://accounts.google.com")
-	warehouserWellknown := getWellknown("https://home.stasbar.com:9000")
-	googleJwks := getJwks(googleWellknown)
-
 	router := httprouter.New()
 	router.GET("/products", logger(getAllProducts))
 	router.GET("/products/:id", logger(getProduct))
 	router.POST("/products", logger(createProduct))
 	router.DELETE("/products/:id", logger(deleteProduct))
 	router.PATCH("/deltaQuantity/:id", logger(deltaQuantity))
-	router.POST("/auth/google", logger(authGoogle(warehouserWellknown, googleJwks)))
 	router.GET("/currentUser", logger(currentUser))
-	router.POST("/auth/facebook", logger(authFacebook(fbAppAccessToken)))
 	log.Fatal(http.ListenAndServe(":80", router))
 }
 
-func getFacebookAppAccessToken() string {
-	clientId := os.Getenv("WAREHOURSER_CLIENT_ID")
-	clientSecret := os.Getenv("WAREHOURSER_CLIENT_SECRET")
-	url := "https://graph.facebook.com/oauth/access_token?client_id=" + clientId + "&client_secret=" + clientSecret + "&grant_type=client_credentials"
-	jsonMap, err := getJsonMap(url)
-	if err != nil {
-		log.Fatal(err)
-		return ""
-	}
-	return jsonMap["access_token"]
-}
-
-func authFacebook(fbAppAccessToken string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		bodyJson, err := toJson(r.Body)
-		if err != nil {
-			log.Println(err)
-		}
-		accessToken := bodyJson["accessToken"]
-		uri := "https://graph.facebook.com/debug_token?input_token=" + accessToken + "&access_token=" + fbAppAccessToken
-		debugToken, err := getJsonMap(uri)
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println(debugToken)
-		// TODO test
-		// TODO return json { accessToken: "..." }
-	}
-}
-
-func authGoogle(warehouserWellknown *wellknown, warehouserJwks string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		body, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		params, err := url.ParseQuery(string(body))
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-		fmt.Println("Query strings")
-		for key, value := range params {
-			fmt.Printf(" %s = %v\n", key, value)
-		}
-
-		jwtToken := params["tokenId"][0]
-		url := "https://oauth2.googleapis.com/tokeninfo?id_token=" + jwtToken
-		tokenInfo, err := getJsonMap(url)
-		// TODO do it localy
-		// https://developers.google.com/identity/protocols/OpenIDConnect#validatinganidtoken
-		// 1. Verify signature based on googleCerts
-		// jwt.Parse(jwtToken, googleCerts)
-		if err != nil {
-			log.Println("Failed to prase google tokenInfo")
-			log.Println(err.Error())
-		}
-		formattedJson, err := json.MarshalIndent(tokenInfo, "", "  ")
-		if err != nil {
-			log.Println(err)
-		}
-		log.Println(string(formattedJson))
-
-		err = verifyGoogleToken(tokenInfo)
-		if err != nil {
-			fmt.Fprint(w, err)
-		}
-
-		// TODO return json { accessToken: "..." }
-	}
-}
 func currentUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if user, err := json.Marshal(map[string]string{
 		"email": r.Header.Get("X-Email"),
@@ -187,62 +103,6 @@ func currentUser(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Printf("user: %s", string(user))
 		fmt.Fprint(w, string(user))
 	}
-}
-
-func getTokenIntrospection(accessToken string) (*TokenIntrospection, error) {
-	data := url.Values{}
-	data.Set("token", accessToken)
-
-	req, err := http.NewRequest("POST", "https://home.stasbar.com:9001/oauth2/introspect", strings.NewReader(data.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.Header = map[string][]string{
-		"Content-Type": []string{"application/x-www-form-urlencoded"},
-		"Accept":       []string{"application/json"},
-	}
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-
-	body, readErr := ioutil.ReadAll(res.Body)
-	if readErr != nil {
-		return nil, readErr
-	}
-	log.Printf("introspection body: %v\n", string(body))
-
-	tokenIntrospection := new(TokenIntrospection)
-	if err := json.Unmarshal(body, tokenIntrospection); err != nil {
-		return nil, err
-	}
-	return tokenIntrospection, nil
-}
-
-func verifyGoogleToken(tokenMap map[string]string) error {
-	iss, ok := tokenMap["iss"]
-	if !ok {
-		log.Println("could not find iss field in id_token")
-	}
-	if iss != "https://accounts.google.com" && iss != "accounts.google.com" {
-		log.Printf("Invalid iss %s\n", iss)
-	}
-
-	expStr, ok := tokenMap["exp"]
-	if !ok {
-		return errors.New("could not find exp field in id_token")
-	}
-
-	exp, err := strconv.ParseInt(expStr, 10, 64)
-	if err != nil {
-		return errors.New("exp is not int")
-	}
-	if exp < time.Now().Unix() {
-		return errors.New("token expired")
-	}
-	// 2. check if iss is https://accounts.google.com or accounts.google.com
-	// 3. ckeck of aud is app client id
-	// 4. exp is not past
-	return nil
 }
 
 func getWellknown(publicUrl string) *wellknown {

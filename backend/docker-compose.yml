@@ -12,6 +12,8 @@ services:
       STASBAR_SSL_CERT: "${STASBAR_SSL_CERT}"
       STASBAR_SSL_KEY: "${STASBAR_SSL_KEY}"
       STASBAR_SSL_CA: "${STASBAR_SSL_CA}"
+      FACEBOOK_CLIENT_ID: "${FACEBOOK_CLIENT_ID}"
+      FACEBOOK_CLIENT_SECRET: "${FACEBOOK_CLIENT_SECRET}"
     ports:
       - "${PORT_CONSENT}:3000"
     volumes:
@@ -50,9 +52,6 @@ services:
   resource:
     container_name: warehouser-resource
     build: ./resource
-    environment:
-      WAREHOURSER_CLIENT_ID: "${WAREHOURSER_CLIENT_ID}"
-      WAREHOURSER_CLIENT_SECRET: "${WAREHOURSER_CLIENT_SECRET}"
     restart: unless-stopped
     depends_on:
       - hydra
