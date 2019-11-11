@@ -29,7 +29,7 @@ class HomePage extends StatelessWidget {
               child: Column(children: [
                 Card(
                     child: ListTile(
-                      title: Text("User Email"),
+                      title: Text("Email"),
                       subtitle: Text(user != null ? user.email : "Unknown"),
                     )),
                 Card(
