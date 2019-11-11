@@ -9,7 +9,7 @@ class LoginPage extends StatelessWidget {
   Function _auth(BuildContext context, Provider provider) {
     return () async {
       await AuthorizationService.authenticate(provider);
-      Navigator.popAndPushNamed(context, homeViewRoute);
+      Navigator.pushReplacementNamed(context, homeViewRoute);
     };
   }
 
@@ -132,9 +132,7 @@ class LoginPage extends StatelessWidget {
       child: Column(
         children: <Widget>[
           loginWithWarehouserBtn,
-          SizedBox(height: 20.0),
           loginGoogleBtn,
-          SizedBox(height: 20.0),
           loginFacebookBtn
         ],
       ),
