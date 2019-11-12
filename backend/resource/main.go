@@ -6,6 +6,7 @@ import (
 	_ "github.com/dgrijalva/jwt-go"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/julienschmidt/httprouter"
+	"github.com/satori/go.uuid"
 	"io"
 	"io/ioutil"
 	"log"
@@ -71,14 +72,18 @@ type TokenIntrospection struct {
 	} `json:"ext"`
 }
 
+func uuidv4() string {
+	return uuid.Must(uuid.NewV4()).String()
+}
+
 var sampleProducts = []Product{
-	Product{"1", "Samsung", "Galaxy S7", 1999, 100},
-	Product{"2", "Samsung", "Galaxy S8", 2299, 100},
-	Product{"3", "Google", "Nexus 5", 1500, 20},
-	Product{"4", "Google", "Nexus 6P", 1899, 20},
-	Product{"5", "Google", "Pixel", 1999, 10},
-	Product{"6", "Google", "Pixel 2", 2299, 20},
-	Product{"7", "Google", "Pixel 3", 2599, 30},
+	Product{uuidv4(), "Samsung", "Galaxy S7", 1999, 100},
+	Product{uuidv4(), "Samsung", "Galaxy S8", 2299, 100},
+	Product{uuidv4(), "Google", "Nexus 5", 1500, 20},
+	Product{uuidv4(), "Google", "Nexus 6P", 1899, 20},
+	Product{uuidv4(), "Google", "Pixel", 1999, 10},
+	Product{uuidv4(), "Google", "Pixel 2", 2299, 20},
+	Product{uuidv4(), "Google", "Pixel 3", 2599, 30},
 }
 
 func main() {
@@ -270,6 +275,7 @@ func createProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	json.Unmarshal(reqBody, &newProduct)
 
 	newProduct.Quantity = 0 // Requiremenet
+	newProduct.Id = uuidv4()
 
 	sampleProducts = append(sampleProducts, newProduct)
 	w.WriteHeader(http.StatusCreated)
