@@ -6,6 +6,9 @@
     url: <https|http>://home.stasbar.com<:\d*|>/<.*>
     methods:
       - GET
+      - PUT
+      - POST
+      - DELETE
 
   authenticators:
     - handler: oauth2_introspection
