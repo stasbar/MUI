@@ -223,33 +223,6 @@ class _EditProductState extends State<EditProductPage> {
                           : null,
                   initialValue: product != null ? product.price.toString() : "",
                 ),
-                TextFormField(
-                  decoration: InputDecoration(
-                    labelText: 'Quantity',
-                    labelStyle: TextStyle(color: Colors.white),
-                    enabledBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                    focusedBorder: UnderlineInputBorder(
-                      borderSide: BorderSide(color: Colors.white),
-                    ),
-                  ),
-                  keyboardType: TextInputType.text,
-                  style: TextStyle(color: Colors.white),
-                  cursorColor: Colors.white,
-                  validator: (value) {
-                    if (value.isEmpty) {
-                      return 'Can not be empty';
-                    }
-                    return null;
-                  },
-                  onChanged: (text) => update['quantity'] =
-                      product == null || int.tryParse(text) != product.quantity
-                          ? int.tryParse(text)
-                          : null,
-                  initialValue:
-                      product != null ? product.quantity.toString() : "",
-                )
               ],
             ),
           ),
