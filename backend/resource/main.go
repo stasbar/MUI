@@ -292,17 +292,30 @@ func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		return
 	}
 	var updatedProduct Product
-	json.Unmarshal(reqBody, &updatedProduct)
-	//TODO validate data
+	err = json.Unmarshal(reqBody, &updatedProduct)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		log.Println(err)
+	}
 
 	for i, product := range sampleProducts {
 		if product.Id == id {
-			product.Manufacturer = updatedProduct.Manufacturer
-			product.Model = updatedProduct.Model
-			product.Price = updatedProduct.Price
-			product.Quantity = updatedProduct.Quantity
-			sampleProducts = append(sampleProducts[:i], product)
-			json.NewEncoder(w).Encode(product)
+			log.Printf("Found product %v\n", product)
+
+			if updatedProduct.Manufacturer != "" {
+				sampleProducts[i].Manufacturer = updatedProduct.Manufacturer
+			}
+			if updatedProduct.Model != "" {
+				sampleProducts[i].Model = updatedProduct.Model
+			}
+			if updatedProduct.Price != 0 {
+				sampleProducts[i].Price = updatedProduct.Price
+			}
+			if updatedProduct.Quantity != 0 {
+				sampleProducts[i].Quantity = updatedProduct.Quantity
+			}
+			json.NewEncoder(w).Encode(sampleProducts[i])
+			log.Println(sampleProducts[i])
 			return
 		}
 	}
