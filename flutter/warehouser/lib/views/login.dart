@@ -15,6 +15,7 @@ class LoginPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    tryToRestoreAccessToken(context);
     // Change Status Bar Color
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(statusBarColor: primaryColor),
@@ -155,5 +156,12 @@ class LoginPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void tryToRestoreAccessToken(BuildContext context) async {
+    final restored = await AuthorizationService.tryToRestoreTokens();
+    if (restored) {
+      Navigator.pushReplacementNamed(context, homeViewRoute);
+    }
   }
 }

@@ -8,7 +8,6 @@ class Product{
   Product({this.id, this.manufacturer, this.model, this.price, this.quantity});
 
   factory Product.fromJson(Map<String,dynamic> json) {
-
     return Product(
       id: json['id'],
       manufacturer: json['manufacturer'],
@@ -17,4 +16,13 @@ class Product{
       quantity: json['quantity'],
     );
   }
+
+  Map<String, dynamic> toJson() =>
+      {
+        'id': id,
+        'manufacturer': manufacturer,
+        'model': model,
+        'price': price,
+        'quantity': quantity,
+      };
 }

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:http/io_client.dart';
-import 'package:warehouser/services/resource.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum Provider { WAREHOUSER, GOOGLE, FACEBOOK }
 
@@ -92,33 +92,42 @@ class AuthorizationService {
     switch (provider) {
       case Provider.FACEBOOK:
         var result = await authenticateFacebook();
-        ResourceService.accessToken = result.accessToken;
-        ResourceService.refreshToken = result.refreshToken;
-        break;
+        persistTokens(result.accessToken, result.refreshToken);
         break;
       case Provider.GOOGLE:
         var result = await authenticateGoogle();
-        ResourceService.accessToken = result.accessToken;
-        ResourceService.refreshToken = result.refreshToken;
-        break;
+        persistTokens(result.accessToken, result.refreshToken);
         break;
       case Provider.WAREHOUSER:
         var result = await authenticateWarehouser();
-        ResourceService.accessToken = result.accessToken;
-        ResourceService.refreshToken = result.refreshToken;
+        persistTokens(result.accessToken, result.refreshToken);
         break;
     }
   }
 
-  static logout() async {
-    final res = await ioClient.post(
-        Uri.https(publicAuthority, '/oauth2/revoke'),
-        body: {'token': ResourceService.refreshToken});
-    if (res.statusCode == 200) {
-      return json.decode(res.body).status;
-    } else {
-      throw Exception(
-          'received status code from server: ${res.statusCode} body: ${res.body}');
+  static persistTokens(String accessToken, String refreshToken) async {
+    final prefs = await SharedPreferences.getInstance();
+
+    prefs.setString("accessToken", accessToken);
+    prefs.setString("refreshToken", refreshToken);
+  }
+
+  static Future<bool> tryToRestoreTokens() async {
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final accessToken = prefs.getString("accessToken");
+      final refreshToken = prefs.getString("refreshToken");
+      return accessToken != null && refreshToken != null;
+    } catch (e) {
+      print("Access or refresh token wrong type");
+      return false;
     }
+  }
+
+  static logout() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    prefs.setString("accessToken", null);
+    prefs.setString("refreshToken", null);
   }
 }
