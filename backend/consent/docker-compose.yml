@@ -1,0 +1,14 @@
+version: '3'
+services:
+  consent:
+    container_name: "warehouser-consent"
+    build: "consent/"
+    env_file: "consent/.env"
+    environment:
+      HYDRA_ADMIN_URL: "http://ory-hydra-example--hydra:4445"
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
+    ports:
+      - "9020:${PORT}"
+    volumes:
+      - "${STASBAR_SSL_DIR}:${STASBAR_SSL_DIR}"
+    restart: 'unless-stopped'

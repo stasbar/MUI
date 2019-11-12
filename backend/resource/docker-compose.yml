@@ -1,0 +1,11 @@
+version: '3'
+services:
+  web:
+    container_name: "warehouser-resource"
+    build: .
+    env_file: ".env"
+    ports:
+      - "${PORT_HTTPS}:${PORT_HTTPS}"
+    volumes:
+      - "${STASBAR_SSL_DIR}:${STASBAR_SSL_DIR}"
+    restart: 'unless-stopped'
