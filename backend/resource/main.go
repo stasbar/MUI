@@ -86,6 +86,7 @@ func main() {
 	router.GET("/products", logger(getAllProducts))
 	router.GET("/products/:id", logger(getProduct))
 	router.POST("/products", logger(createProduct))
+	router.PUT("/products/:id", logger(updateProduct))
 	router.DELETE("/products/:id", logger(deleteProduct))
 	router.PATCH("/deltaQuantity/:id", logger(deltaQuantity))
 	router.GET("/currentUser", logger(currentUser))
@@ -278,13 +279,13 @@ func createProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 
 func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
-	var updatedProduct Product
 
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Request body empty", http.StatusBadRequest)
 		return
 	}
+	var updatedProduct Product
 	json.Unmarshal(reqBody, &updatedProduct)
 	//TODO validate data
 
