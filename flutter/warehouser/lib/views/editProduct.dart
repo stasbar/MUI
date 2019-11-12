@@ -137,7 +137,7 @@ class _EditProductState extends State<EditProductPage> {
         ),
       ),
     );
-    final form = (product) => Padding(
+    final form = (Product product) => Padding(
           padding: EdgeInsets.only(top: 30.0),
           child: Form(
             key: _formKey,
@@ -167,6 +167,7 @@ class _EditProductState extends State<EditProductPage> {
                       product == null || text != product.manufacturer
                           ? text
                           : null,
+                  initialValue: product != null ? product.manufacturer : "",
                 ),
                 TextFormField(
                   decoration: InputDecoration(
@@ -190,6 +191,7 @@ class _EditProductState extends State<EditProductPage> {
                   },
                   onChanged: (text) => update['model'] =
                       product == null || text != product.model ? text : null,
+                  initialValue: product != null ? product.model : "",
                 ),
                 TextFormField(
                   decoration: InputDecoration(
@@ -215,6 +217,7 @@ class _EditProductState extends State<EditProductPage> {
                       product == null || int.tryParse(text) != product.price
                           ? int.tryParse(text)
                           : null,
+                  initialValue: product != null ? product.price.toString() : "",
                 ),
                 TextFormField(
                   decoration: InputDecoration(
@@ -240,6 +243,7 @@ class _EditProductState extends State<EditProductPage> {
                       product == null || int.tryParse(text) != product.quantity
                           ? int.tryParse(text)
                           : null,
+                  initialValue: product != null ? product.quantity.toString() : "",
                 )
               ],
             ),

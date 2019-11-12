@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:warehouser/_routing/routes.dart';
 import '../model/Product.dart';
 import '../services/resource.dart';
@@ -12,13 +13,16 @@ class _ProductsPageState extends State<ProductsPage> {
   List<Product> _products;
   Exception _exception;
 
+  RefreshController _refreshController =
+      RefreshController(initialRefresh: false);
+
   @override
   void initState() {
     fetchProducts();
     super.initState();
   }
 
-  void fetchProducts() async {
+  Future fetchProducts() async {
     try {
       final products = await ResourceService.fetchProducts();
       setState(() {
@@ -31,6 +35,12 @@ class _ProductsPageState extends State<ProductsPage> {
         _exception = e;
       });
     }
+  }
+
+  void _onRefresh() async {
+    print("onRefresh");
+    await fetchProducts();
+    _refreshController.refreshCompleted();
   }
 
   @override
@@ -52,17 +62,21 @@ class _ProductsPageState extends State<ProductsPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Products'),
-        actions: <Widget>[
-          IconButton(
-              icon: Icon(Icons.add),
-              onPressed: () =>
-                  Navigator.pushNamed(context, createProductViewPage)),
-        ],
-      ),
-      body: mainContent,
-    );
+        appBar: AppBar(
+          title: Text('Products'),
+          actions: <Widget>[
+            IconButton(
+                icon: Icon(Icons.add),
+                onPressed: () =>
+                    Navigator.pushNamed(context, createProductViewPage)),
+          ],
+        ),
+        body: SmartRefresher(
+            enablePullDown: true,
+            enablePullUp: true,
+            controller: _refreshController,
+            onRefresh: _onRefresh,
+            child: mainContent));
   }
 
   Widget _buildRow(BuildContext context, Product product) {
