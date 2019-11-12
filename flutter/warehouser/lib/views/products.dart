@@ -24,7 +24,7 @@ class _ProductsPageState extends State<ProductsPage> {
 
   Future fetchProducts() async {
     try {
-      final products = await ResourceService.fetchProducts();
+      final products = await ResourceService.getAllProducts();
       setState(() {
         _products = products;
         _exception = null;

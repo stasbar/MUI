@@ -22,8 +22,12 @@ class _EditProductState extends State<EditProductPage> {
 
   bool isInEditModel() => widget.productId != null;
 
-  void _delete() async {
-    await ResourceService.deleteProduct(widget.productId);
+  void _delete(BuildContext context) async {
+    try {
+      await ResourceService.deleteProduct(widget.productId);
+    } catch (e) {
+      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   @override
@@ -115,8 +119,8 @@ class _EditProductState extends State<EditProductPage> {
       ),
     );
 
-    final deleteBtn = InkWell(
-      onTap: () => _delete(),
+    final deleteBtn = (context) => InkWell(
+      onTap: () => _delete(context),
       child: Container(
         height: 60.0,
         width: MediaQuery.of(context).size.width,
@@ -243,7 +247,8 @@ class _EditProductState extends State<EditProductPage> {
                       product == null || int.tryParse(text) != product.quantity
                           ? int.tryParse(text)
                           : null,
-                  initialValue: product != null ? product.quantity.toString() : "",
+                  initialValue:
+                      product != null ? product.quantity.toString() : "",
                 )
               ],
             ),
@@ -263,33 +268,35 @@ class _EditProductState extends State<EditProductPage> {
     }
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Container(
-          padding: EdgeInsets.only(top: 40.0),
-          decoration: BoxDecoration(gradient: primaryGradient),
-          height: MediaQuery.of(context).size.height,
-          width: MediaQuery.of(context).size.width,
-          child: SingleChildScrollView(
-            child: Column(
-              children: <Widget>[
-                appBar,
-                Container(
-                  padding: EdgeInsets.only(left: 30.0, right: 30.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      pageTitle,
-                      mainContent,
-                      submitBtn,
-                      deleteBtn,
-                    ],
+      body: Builder(builder: (BuildContext context) {
+        return SingleChildScrollView(
+          child: Container(
+            padding: EdgeInsets.only(top: 40.0),
+            decoration: BoxDecoration(gradient: primaryGradient),
+            height: MediaQuery.of(context).size.height,
+            width: MediaQuery.of(context).size.width,
+            child: SingleChildScrollView(
+              child: Column(
+                children: <Widget>[
+                  appBar,
+                  Container(
+                    padding: EdgeInsets.only(left: 30.0, right: 30.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        pageTitle,
+                        mainContent,
+                        submitBtn,
+                        deleteBtn(context),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }

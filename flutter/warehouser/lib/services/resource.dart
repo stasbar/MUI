@@ -35,11 +35,11 @@ class ResourceService {
       return User.fromJson(json.decode(response.body));
     } else {
       throw Exception(
-          'Failed to get current user, response: ${response.statusCode}');
+          'Failed to get current user, reason: ${response.body}');
     }
   }
 
-  static Future<List<Product>> fetchProducts() async {
+  static Future<List<Product>> getAllProducts() async {
     final url = '$baseUrl/products';
     print(url);
     final response = await ioClient
@@ -53,7 +53,8 @@ class ResourceService {
       }
       return posts;
     } else {
-      throw Exception('Filed to load product');
+      throw Exception(
+          'Failed to get all product reason: ${response.body}');
     }
   }
 
@@ -66,7 +67,7 @@ class ResourceService {
       return Product.fromJson(json.decode(response.body));
     } else {
       throw Exception(
-          'Failed to get product, response: ${response.statusCode}');
+          'Failed to get product reason: ${response.body}');
     }
   }
 
@@ -80,7 +81,7 @@ class ResourceService {
       print(response.body);
     } else {
       throw Exception(
-          'Failed to get product, response: ${response.statusCode}');
+          'Failed to update product reason: ${response.body}');
     }
   }
 
@@ -93,7 +94,7 @@ class ResourceService {
       print(response.body);
     } else {
       throw Exception(
-          'Failed to get product, response: ${response.statusCode}');
+          'Failed to delete product reason: ${response.body}');
     }
   }
 
@@ -108,7 +109,7 @@ class ResourceService {
       print(response.body);
     } else {
       throw Exception(
-          'Failed to get product, response: ${response.statusCode}');
+          'Failed to create product reason: ${response.body}');
     }
   }
 }
