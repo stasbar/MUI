@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/io_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warehouser/model/Product.dart';
 import 'package:warehouser/model/User.dart';
 
@@ -9,8 +10,15 @@ class ResourceService {
   static int port = 1234;
   static String baseUrl = 'https://home.stasbar.com:$port';
 
-  static String accessToken;
-  static String refreshToken;
+  static Future<String> accessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("accessToken");
+  }
+
+  static Future<String> refreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("refreshToken");
+  }
 
   static HttpClient httpClient = new HttpClient()
     ..badCertificateCallback =
@@ -18,11 +26,24 @@ class ResourceService {
 
   static IOClient ioClient = new IOClient(httpClient);
 
-  static Future<List<Product>> fetchProducts() async {
+  static Future<User> currentUser() async {
+    final url = '$baseUrl/currentUser';
+    print(url);
+    final response = await ioClient
+        .get(url, headers: {'Authorization': 'bearer ${await accessToken()}'});
+    if (response.statusCode == 200) {
+      return User.fromJson(json.decode(response.body));
+    } else {
+      throw Exception(
+          'Failed to get current user, reason: ${response.body}');
+    }
+  }
+
+  static Future<List<Product>> getAllProducts() async {
     final url = '$baseUrl/products';
     print(url);
     final response = await ioClient
-        .get(url, headers: {'Authorization': 'bearer $accessToken'});
+        .get(url, headers: {'Authorization': 'bearer ${await accessToken()}'});
 
     if (response.statusCode == 200) {
       final postsJson = json.decode(response.body);
@@ -32,7 +53,8 @@ class ResourceService {
       }
       return posts;
     } else {
-      throw Exception('Filed to load product');
+      throw Exception(
+          'Failed to get all product reason: ${response.body}');
     }
   }
 
@@ -40,12 +62,12 @@ class ResourceService {
     final url = '$baseUrl/products/$productId';
     print(url);
     final response = await ioClient
-        .get(url, headers: {'Authorization': 'bearer $accessToken'});
+        .get(url, headers: {'Authorization': 'bearer ${await accessToken()}'});
     if (response.statusCode == 200) {
       return Product.fromJson(json.decode(response.body));
     } else {
       throw Exception(
-          'Failed to get product, response: ${response.statusCode}');
+          'Failed to get product reason: ${response.body}');
     }
   }
 
@@ -54,25 +76,40 @@ class ResourceService {
     print(url);
     final response = await ioClient.put(url,
         body: json.encode(update),
-        headers: {'Authorization': 'bearer $accessToken'});
+        headers: {'Authorization': 'bearer ${await accessToken()}'});
     if (response.statusCode == 200) {
       print(response.body);
     } else {
       throw Exception(
-          'Failed to get product, response: ${response.statusCode}');
+          'Failed to update product reason: ${response.body}');
     }
   }
 
-  static Future<User> currentUser() async {
-    final url = '$baseUrl/currentUser';
+  static deleteProduct(String productId) async {
+    final url = '$baseUrl/products/$productId';
     print(url);
     final response = await ioClient
-        .get(url, headers: {'Authorization': 'bearer $accessToken'});
+        .delete(url, headers: {'Authorization': 'bearer ${await accessToken()}'});
     if (response.statusCode == 200) {
-      return User.fromJson(json.decode(response.body));
+      print(response.body);
     } else {
       throw Exception(
-          'Failed to get current user, response: ${response.statusCode}');
+          'Failed to delete product reason: ${response.body}');
+    }
+  }
+
+  static createProduct(Product product) async {
+    final url = '$baseUrl/products';
+    print(url);
+
+    final response = await ioClient.post(url,
+        body: jsonEncode(product),
+        headers: {'Authorization': 'bearer ${await accessToken()}'});
+    if (response.statusCode == 201) {
+      print(response.body);
+    } else {
+      throw Exception(
+          'Failed to create product reason: ${response.body}');
     }
   }
 }
