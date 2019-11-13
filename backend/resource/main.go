@@ -322,6 +322,13 @@ func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 }
 
 func deleteProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	role := r.Header.Get("X-Role")
+	if role != "manager" {
+		http.Error(w, "Only manager can delete products", http.StatusForbidden)
+		log.Println("Only manager can delete products")
+		return
+	}
+
 	id := ps.ByName("id")
 	for i, product := range sampleProducts {
 		if product.Id == id {
