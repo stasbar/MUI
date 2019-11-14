@@ -12,10 +12,11 @@ block content
         p.
             Hi #{user}, application <strong>#{client.client_name || client.client_id}</strong> wants access resources on your behalf and to:
 
-        each scope in requested_scope
-            input(type="checkbox",id=scope,value=scope,name="grant_scope")
-            label(for=scope) #{scope}
-            br
+        div(class="form-group form-check")
+            each scope in requested_scope
+                input(type="checkbox",id=scope,value=scope,name="grant_scope", class="form-check-input")
+                label(for=scope, class="form-check-label") #{scope}
+                br
 
         p.
             Do you want to be asked next time when this application wants to access your data? The application will
@@ -27,9 +28,9 @@ block content
             if client.tos_uri
                 li
                     a(href=client.tos_uri) Terms of Service
-        p
-            input(type="checkbox",id="remember",name="remember",value="1")
-            label(for="remember") Do not ask me again
-        p
-            input(type="submit",id="accept",name="submit",value="Allow access")
-            input(type="submit",id="reject",name="submit",value="Deny access")
+        div(class="form-group form-check")
+            input(type="checkbox",id="remember",name="remember",value="1", class="form-check-input")
+            label(for="remember", class="form-check-label") Do not ask me again
+
+        button(type="submit", id="accept", name="submit", class="btn btn-primary") Allow access
+        button(type="submit", id="reject", name="submit", class="btn btn-outline-secondary") Deny access
