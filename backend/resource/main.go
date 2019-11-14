@@ -19,7 +19,7 @@ type Product struct {
 	Manufacturer string `json:"manufacturer"`
 	Model        string `json:"model"`
 	Price        uint   `json:"price"`
-	Quantity     uint   `json:"quantity"`
+	Quantity     int    `json:"quantity"`
 }
 
 type wellknown struct {
@@ -93,7 +93,7 @@ func main() {
 	router.POST("/products", logger(createProduct))
 	router.PUT("/products/:id", logger(updateProduct))
 	router.DELETE("/products/:id", logger(deleteProduct))
-	router.PATCH("/deltaQuantity/:id", logger(deltaQuantity))
+	router.POST("/deltaQuantity", logger(deltaQuantity))
 	router.GET("/currentUser", logger(currentUser))
 	log.Fatal(http.ListenAndServe(":80", router))
 }
@@ -292,10 +292,10 @@ func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		return
 	}
 	var updatedProduct Product
-	err = json.Unmarshal(reqBody, &updatedProduct)
-	if err != nil {
+	if err = json.Unmarshal(reqBody, &updatedProduct); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		log.Println(err)
+		return
 	}
 
 	for i, product := range sampleProducts {
@@ -337,6 +337,31 @@ func deleteProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 		}
 	}
 }
+
 func deltaQuantity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	//TODO
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Request body empty", http.StatusBadRequest)
+		return
+	}
+
+	var deltaQuantity struct {
+		Id    string `json:"id"`
+		Delta int    `json:"delta"`
+	}
+	if err = json.Unmarshal(reqBody, &deltaQuantity); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		log.Println(err)
+		return
+	}
+
+	for i := range sampleProducts {
+		if sampleProducts[i].Id == deltaQuantity.Id {
+			sampleProducts[i].Quantity += deltaQuantity.Delta
+
+			json.NewEncoder(w).Encode(sampleProducts[i])
+			log.Println(sampleProducts[i])
+			return
+		}
+	}
 }
