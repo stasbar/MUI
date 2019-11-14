@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:warehouser/_routing/routes.dart';
-import 'package:warehouser/services/authorization.dart';
-
-import '../model/User.dart';
-import '../services/resource.dart';
+import 'package:warehouser/utils/colors.dart';
+import 'package:warehouser/views/tabs/products.dart';
+import 'package:warehouser/views/tabs/profile.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -11,75 +9,48 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  User _currentUser;
-  Exception _exception;
+  int _currentIndex = 0;
 
-  @override
-  void initState() {
-    fetchCurrentUser();
-    super.initState();
-  }
+  final List<Widget> _pages = [
+    ProfilePage(),
+    ProductsPage(),
+  ];
 
-  void _logout() async {
-    await AuthorizationService.logout();
-    Navigator.pushReplacementNamed(context, loginViewRoute);
-  }
-
-  void fetchCurrentUser() async {
-    try {
-      final theCurrentUser = await ResourceService.currentUser();
-      setState(() {
-        _currentUser = theCurrentUser;
-        _exception = null;
-      });
-    } catch (e) {
-      setState(() {
-        _currentUser = null;
-        _exception = e;
-      });
-    }
+  void onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    Widget mainContent;
-    if (_currentUser == null && _exception == null) {
-      mainContent = CircularProgressIndicator();
-    } else if (_exception != null) {
-      mainContent = Text("Exception: ${_exception.toString()}");
-    } else {
-      mainContent = SingleChildScrollView(
-        child: Column(children: [
-          Card(
-              child: ListTile(
-            title: Text("Email"),
-            subtitle: Text(_currentUser.email),
-          )),
-          Card(
-              child: ListTile(
-            title: Text("Role"),
-            subtitle: Text(_currentUser.role),
-          )),
-          Card(
-              child: FlatButton(
-            child: Text("Show Products"),
-            onPressed: () => Navigator.pushNamed(context, productsViewRoute),
-          )),
-        ]),
-      );
-    }
-    return Scaffold(
-        appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
-          title: Text("Home"),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.call_made),
-              onPressed: () => _logout(),
-            ),
-          ],
+    final bottomNavBar = BottomNavigationBar(
+      onTap: onTabTapped,
+      currentIndex: _currentIndex,
+      selectedItemColor: primaryColor,
+      unselectedItemColor: Colors.grey.withOpacity(0.6),
+      elevation: 0.0,
+      items: [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.account_circle),
+          title: Text(
+            'Profile',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
-        body: mainContent);
+        BottomNavigationBarItem(
+          icon: Icon(Icons.apps),
+          title: Text(
+            'Products',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    );
+
+    return Scaffold(
+        bottomNavigationBar: bottomNavBar,
+        body: _pages[_currentIndex],
+    );
   }
 }

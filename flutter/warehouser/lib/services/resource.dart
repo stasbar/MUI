@@ -34,8 +34,7 @@ class ResourceService {
     if (response.statusCode == 200) {
       return User.fromJson(json.decode(response.body));
     } else {
-      throw Exception(
-          'Failed to get current user, reason: ${response.body}');
+      throw Exception('Failed to get current user, reason: ${response.body}');
     }
   }
 
@@ -53,8 +52,7 @@ class ResourceService {
       }
       return posts;
     } else {
-      throw Exception(
-          'Failed to get all product reason: ${response.body}');
+      throw Exception('Failed to get all product reason: ${response.body}');
     }
   }
 
@@ -66,8 +64,7 @@ class ResourceService {
     if (response.statusCode == 200) {
       return Product.fromJson(json.decode(response.body));
     } else {
-      throw Exception(
-          'Failed to get product reason: ${response.body}');
+      throw Exception('Failed to get product reason: ${response.body}');
     }
   }
 
@@ -80,21 +77,19 @@ class ResourceService {
     if (response.statusCode == 200) {
       print(response.body);
     } else {
-      throw Exception(
-          'Failed to update product reason: ${response.body}');
+      throw Exception('Failed to update product reason: ${response.body}');
     }
   }
 
   static deleteProduct(String productId) async {
     final url = '$baseUrl/products/$productId';
     print(url);
-    final response = await ioClient
-        .delete(url, headers: {'Authorization': 'bearer ${await accessToken()}'});
+    final response = await ioClient.delete(url,
+        headers: {'Authorization': 'bearer ${await accessToken()}'});
     if (response.statusCode == 200) {
       print(response.body);
     } else {
-      throw Exception(
-          'Failed to delete product reason: ${response.body}');
+      throw Exception('Failed to delete product reason: ${response.body}');
     }
   }
 
@@ -108,8 +103,23 @@ class ResourceService {
     if (response.statusCode == 201) {
       print(response.body);
     } else {
-      throw Exception(
-          'Failed to create product reason: ${response.body}');
+      throw Exception('Failed to create product reason: ${response.body}');
+    }
+  }
+
+  static deltaQuantity(String productId, int delta) async {
+    final url = '$baseUrl/deltaQuantity';
+    print(url);
+    final response = await ioClient.post(url,
+        body: jsonEncode({
+          'id': productId,
+          'delta': delta,
+        }),
+        headers: {'Authorization': 'bearer ${await accessToken()}'});
+    if (response.statusCode == 200) {
+      print(response.body);
+    } else {
+      throw Exception('Failed to create product reason: ${response.body}');
     }
   }
 }
