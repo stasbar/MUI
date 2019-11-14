@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:warehouser/_routing/routes.dart';
-import '../model/Product.dart';
-import '../services/resource.dart';
+import '../../model/Product.dart';
+import '../../services/resource.dart';
 
 class ProductsPage extends StatefulWidget {
   @override
@@ -72,8 +72,6 @@ class _ProductsPageState extends State<ProductsPage> {
           ],
         ),
         body: SmartRefresher(
-            enablePullDown: true,
-            enablePullUp: true,
             controller: _refreshController,
             onRefresh: _onRefresh,
             child: mainContent));

@@ -19,16 +19,7 @@ class _EditProductState extends State<EditProductPage> {
 
   Product _product;
   Exception _exception;
-
-  bool isInEditModel() => widget.productId != null;
-
-  void _delete(BuildContext context) async {
-    try {
-      await ResourceService.deleteProduct(widget.productId);
-    } catch (e) {
-      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-    }
-  }
+  int _delta;
 
   @override
   void initState() {
@@ -36,6 +27,14 @@ class _EditProductState extends State<EditProductPage> {
       fetchProduct();
     }
     super.initState();
+  }
+
+  bool isInEditModel() => widget.productId != null;
+
+  void _changeDelta(String text) {
+    setState(() {
+      _delta = int.tryParse(text) != null ? int.tryParse(text) : 0;
+    });
   }
 
   Future fetchProduct() async {
@@ -53,14 +52,46 @@ class _EditProductState extends State<EditProductPage> {
     }
   }
 
-  void _submit() async {
+  void _submit(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       if (isInEditModel()) {
-        await ResourceService.updateProduct(widget.productId, update);
+        safely(context, () => ResourceService.updateProduct(widget.productId, update));
       } else {
         final product = new Product.fromJson(update);
-        await ResourceService.createProduct(product);
+        safely(context, () => ResourceService.createProduct(product));
       }
+    }
+  }
+
+  void _delete(BuildContext context) async {
+    safely(context, () => ResourceService.deleteProduct(widget.productId));
+  }
+
+  void _decreaseDelta(BuildContext context) async {
+    _performDelta(context, -_delta);
+  }
+
+  void _increaseDelta(BuildContext context) {
+    _performDelta(context, _delta);
+  }
+
+  void _performDelta(BuildContext context, int delta) {
+    safely(context, () {
+      print(_delta);
+      if (delta == null || delta == 0) {
+        throw new Exception("Please enter value first");
+      } else {
+        ResourceService.deltaQuantity(widget.productId, delta);
+      }
+    });
+  }
+
+
+  void safely(BuildContext context, Function func) async {
+    try {
+      await func();
+    } catch (e) {
+      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     }
   }
 
@@ -93,54 +124,54 @@ class _EditProductState extends State<EditProductPage> {
       ),
     );
 
-    final submitBtn = Container(
-      margin: EdgeInsets.only(top: 40.0),
-      height: 60.0,
-      width: MediaQuery.of(context).size.width,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(7.0),
-        border: Border.all(color: Colors.white),
-        color: Colors.white,
-      ),
-      child: RaisedButton(
-        elevation: 5.0,
-        onPressed: () => _submit(),
-        color: Colors.white,
-        shape: new RoundedRectangleBorder(
-          borderRadius: new BorderRadius.circular(7.0),
-        ),
-        child: Text(
-          isInEditModel() ? 'UPDATE' : 'CREATE',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 20.0,
+    final submitBtn = (BuildContext context) => Container(
+          margin: EdgeInsets.only(top: 40.0),
+          height: 60.0,
+          width: MediaQuery.of(context).size.width,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(7.0),
+            border: Border.all(color: Colors.white),
+            color: Colors.white,
           ),
-        ),
-      ),
-    );
-
-    final deleteBtn = (context) => InkWell(
-      onTap: () => _delete(context),
-      child: Container(
-        height: 60.0,
-        width: MediaQuery.of(context).size.width,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(7.0),
-          border: Border.all(color: Colors.white),
-          color: Colors.transparent,
-        ),
-        child: Center(
-          child: Text(
-            'DELETE',
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              fontSize: 20.0,
-              color: Colors.white,
+          child: RaisedButton(
+            elevation: 5.0,
+            onPressed: () => _submit(context),
+            color: Colors.white,
+            shape: new RoundedRectangleBorder(
+              borderRadius: new BorderRadius.circular(7.0),
+            ),
+            child: Text(
+              isInEditModel() ? 'UPDATE' : 'CREATE',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 20.0,
+              ),
             ),
           ),
-        ),
-      ),
-    );
+        );
+
+    final deleteBtn = (context) => InkWell(
+          onTap: () => _delete(context),
+          child: Container(
+            height: 60.0,
+            width: MediaQuery.of(context).size.width,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(7.0),
+              border: Border.all(color: Colors.white),
+              color: Colors.transparent,
+            ),
+            child: Center(
+              child: Text(
+                'DELETE',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 20.0,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        );
     final form = (Product product) => Padding(
           padding: EdgeInsets.only(top: 30.0),
           child: Form(
@@ -227,6 +258,29 @@ class _EditProductState extends State<EditProductPage> {
             ),
           ),
         );
+
+    final deltaView = (BuildContext context) => Row(
+          children: <Widget>[
+            IconButton(
+              onPressed: () => _decreaseDelta(context),
+              icon: Icon(
+                Icons.remove,
+                color: Colors.white,
+              ),
+            ),
+            Expanded(
+              child: TextField(onChanged: (text) => _changeDelta(text)),
+            ),
+            IconButton(
+              onPressed: () => _increaseDelta(context),
+              icon: Icon(
+                Icons.add,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        );
+
     Widget mainContent;
     if (isInEditModel()) {
       if (_product == null && _exception == null) {
@@ -248,24 +302,25 @@ class _EditProductState extends State<EditProductPage> {
             decoration: BoxDecoration(gradient: primaryGradient),
             height: MediaQuery.of(context).size.height,
             width: MediaQuery.of(context).size.width,
-            child: SingleChildScrollView(
-              child: Column(
-                children: <Widget>[
-                  appBar,
-                  Container(
-                    padding: EdgeInsets.only(left: 30.0, right: 30.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        pageTitle,
-                        mainContent,
-                        submitBtn,
-                        deleteBtn(context),
-                      ],
-                    ),
+            child: Column(
+              children: <Widget>[
+                appBar,
+                Container(
+                  padding: EdgeInsets.only(left: 30.0, right: 30.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      pageTitle,
+                      mainContent,
+                      Visibility(
+                          visible: isInEditModel(), child: deltaView(context)),
+                      submitBtn(context),
+                      Visibility(
+                          visible: isInEditModel(), child: deleteBtn(context)),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         );
