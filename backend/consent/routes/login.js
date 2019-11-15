@@ -117,7 +117,7 @@ async function authenticateWithGoogle(res, next, challenge, googleIdToken) {
     validateGoogleToken(token);
     const response = await hydra.acceptLoginRequest(challenge, {
       subject: token.email,
-      remember_for: 3600,
+      remember_for: 60 * 60 * 24,
     })
     res.redirect(response.redirect_to);
   } catch (error) {
@@ -156,7 +156,7 @@ async function authenticateWithFacebook(res, next, challenge, facebookIdToken) {
     console.log(user);
     const response = await hydra.acceptLoginRequest(challenge, {
       subject: user.email,
-      remember_for: 3600,
+      remember_for: 60 * 60 * 24,
     })
     res.redirect(response.redirect_to);
   }catch (error){
