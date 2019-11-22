@@ -5,6 +5,7 @@ import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_facebook_login/flutter_facebook_login.dart';
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:warehouser/model/User.dart';
 
 enum Provider { WAREHOUSER, GOOGLE, FACEBOOK }
 
@@ -20,6 +21,18 @@ class AuthorizationService {
   static IOClient ioClient = new IOClient(httpClient);
 
   static FlutterAppAuth appAuth = FlutterAppAuth();
+
+  static User currentUser;
+
+  static Future<String> accessToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("accessToken");
+  }
+
+  static Future<String> refreshToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString("refreshToken");
+  }
 
   static Future<String> getHealthStatus() async {
     final res = await ioClient.get(Uri.https(publicAuthority, '/health/ready'));

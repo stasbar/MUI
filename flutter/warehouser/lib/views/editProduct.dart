@@ -5,9 +5,9 @@ import 'package:warehouser/services/resource.dart';
 import 'package:warehouser/utils/colors.dart';
 
 class EditProductPage extends StatefulWidget {
-  final String productId;
+  final Product product;
 
-  EditProductPage({Key key, this.productId}) : super(key: key);
+  EditProductPage({Key key, this.product}) : super(key: key);
 
   @override
   _EditProductState createState() => _EditProductState();
@@ -29,7 +29,7 @@ class _EditProductState extends State<EditProductPage> {
     super.initState();
   }
 
-  bool isInEditModel() => widget.productId != null;
+  bool isInEditModel() => widget.product != null;
 
   void _changeDelta(String text) {
     setState(() {
@@ -38,24 +38,16 @@ class _EditProductState extends State<EditProductPage> {
   }
 
   Future fetchProduct() async {
-    try {
-      final theProduct = await ResourceService.getProduct(widget.productId);
-      setState(() {
-        _product = theProduct;
-        _exception = null;
-      });
-    } catch (e) {
-      setState(() {
-        _product = null;
-        _exception = e;
-      });
-    }
+    setState(() {
+      _product = widget.product;
+    });
   }
 
   void _submit(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       if (isInEditModel()) {
-        safely(context, () => ResourceService.updateProduct(widget.productId, update));
+        safely(context,
+            () => ResourceService.updateProduct(widget.product.id, update));
       } else {
         final product = new Product.fromJson(update);
         safely(context, () => ResourceService.createProduct(product));
@@ -64,7 +56,7 @@ class _EditProductState extends State<EditProductPage> {
   }
 
   void _delete(BuildContext context) async {
-    safely(context, () => ResourceService.deleteProduct(widget.productId));
+    safely(context, () => ResourceService.deleteProduct(widget.product.id));
   }
 
   void _decreaseDelta(BuildContext context) async {
@@ -81,11 +73,10 @@ class _EditProductState extends State<EditProductPage> {
       if (delta == null || delta == 0) {
         throw new Exception("Please enter value first");
       } else {
-        ResourceService.deltaQuantity(widget.productId, delta);
+        ResourceService.deltaQuantity(widget.product.id, delta);
       }
     });
   }
-
 
   void safely(BuildContext context, Function func) async {
     try {

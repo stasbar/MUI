@@ -22,6 +22,7 @@ class _ProfilePage extends State<ProfilePage>{
   void fetchCurrentUser() async {
     try {
       final theCurrentUser = await ResourceService.currentUser();
+      AuthorizationService.currentUser = theCurrentUser;
       setState(() {
         _currentUser = theCurrentUser;
         _exception = null;
