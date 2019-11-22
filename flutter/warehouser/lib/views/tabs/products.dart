@@ -85,7 +85,7 @@ class _ProductsPageState extends State<ProductsPage> {
       subtitle: Text("\$${product.price} QA:${product.quantity}"),
       trailing: Icon(Icons.phone_android),
       onTap: () => Navigator.pushNamed(context, editProductViewPage,
-          arguments: product.id),
+          arguments: product),
     );
   }
 }

@@ -17,7 +17,7 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(builder: (context) => EditProductPage());
     case editProductViewPage:
       return MaterialPageRoute(
-          builder: (context) => EditProductPage(productId: settings.arguments));
+          builder: (context) => EditProductPage(product: settings.arguments));
       break;
     default:
       return MaterialPageRoute(builder: (context) => LoginPage());

@@ -4,8 +4,10 @@ class Product{
   final String model;
   final int price;
   final int quantity;
+  final bool deleted;
+  final int lastTimeModified;
 
-  Product({this.id, this.manufacturer, this.model, this.price, this.quantity});
+  Product({this.id, this.manufacturer, this.model, this.price, this.quantity, this.lastTimeModified, this.deleted});
 
   factory Product.fromJson(Map<String,dynamic> json) {
     return Product(
@@ -14,6 +16,8 @@ class Product{
       model: json['model'],
       price: json['price'],
       quantity: json['quantity'],
+      lastTimeModified: json['lastTimeModified'],
+      deleted: json['deleted'],
     );
   }
 
@@ -24,5 +28,7 @@ class Product{
         'model': model,
         'price': price,
         'quantity': quantity,
+        'lastTimeModified': lastTimeModified,
+        'deleted': deleted,
       };
 }
