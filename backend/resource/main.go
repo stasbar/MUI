@@ -15,11 +15,13 @@ import (
 )
 
 type Product struct {
-	Id           string `json:"id"`
-	Manufacturer string `json:"manufacturer"`
-	Model        string `json:"model"`
-	Price        uint   `json:"price"`
-	Quantity     int    `json:"quantity"`
+	Id               string `json:"id"`
+	Manufacturer     string `json:"manufacturer"`
+	Model            string `json:"model"`
+	Price            uint   `json:"price"`
+	Quantity         int    `json:"quantity"`
+	LastTimeModified uint   `json:"lastTimeModified"`
+	Deleted          bool   `json:"deleted"`
 }
 
 type wellknown struct {
@@ -76,25 +78,44 @@ func uuidv4() string {
 	return uuid.Must(uuid.NewV4()).String()
 }
 
-var sampleProducts = []Product{
-	Product{uuidv4(), "Samsung", "Galaxy S7", 1999, 100},
-	Product{uuidv4(), "Samsung", "Galaxy S8", 2299, 100},
-	Product{uuidv4(), "Google", "Nexus 5", 1500, 20},
-	Product{uuidv4(), "Google", "Nexus 6P", 1899, 20},
-	Product{uuidv4(), "Google", "Pixel", 1999, 10},
-	Product{uuidv4(), "Google", "Pixel 2", 2299, 20},
-	Product{uuidv4(), "Google", "Pixel 3", 2599, 30},
+var sampleProducts = map[string]*Product{
+	"123asd": &Product{"123asd", "Samsung", "Galaxy S7", 1999, 100, 0, false},
+	"234sdf": &Product{"234sdf", "Samsung", "Galaxy S8", 2299, 100, 0, false},
+	"345dfg": &Product{"345dfg", "Google", "Nexus 5", 1500, 20, 0, false},
+	"456fgh": &Product{"456fgh", "Google", "Nexus 6P", 1899, 20, 0, false},
+	"567ghj": &Product{"567ghj", "Google", "Pixel", 1999, 10, 0, false},
+}
+
+// initial subtotals
+var productDeviceSubtotal = map[string]map[string]int{
+	"123asd": map[string]int{
+		"123": 10,
+		"234": -5,
+	},
+	"234sdf": map[string]int{
+		"123": -20,
+		"234": 30,
+	},
+	"345dfg": map[string]int{
+		"123": -20,
+		"234": 30,
+	},
+	"456fgh": map[string]int{
+		"123": -20,
+		"234": 30,
+	},
+	"567ghj": map[string]int{
+		"123": -20,
+		"234": 30,
+	},
 }
 
 func main() {
 	router := httprouter.New()
 	router.GET("/products", logger(getAllProducts))
 	router.GET("/products/:id", logger(getProduct))
-	router.POST("/products", logger(createProduct))
-	router.PUT("/products/:id", logger(updateProduct))
-	router.DELETE("/products/:id", logger(deleteProduct))
-	router.POST("/deltaQuantity", logger(deltaQuantity))
 	router.GET("/currentUser", logger(currentUser))
+	router.POST("/sync", logger(sync))
 	log.Fatal(http.ListenAndServe(":80", router))
 }
 
@@ -264,25 +285,6 @@ func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 }
 
-func createProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var newProduct Product
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Request body empty", http.StatusBadRequest)
-		return
-	}
-
-	json.Unmarshal(reqBody, &newProduct)
-
-	newProduct.Quantity = 0 // Requiremenet
-	newProduct.Id = uuidv4()
-
-	sampleProducts = append(sampleProducts, newProduct)
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(newProduct)
-}
-
 func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id := ps.ByName("id")
 
@@ -321,47 +323,57 @@ func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params)
 	}
 }
 
-func deleteProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	role := r.Header.Get("X-Role")
-	if role != "manager" {
-		http.Error(w, "Only manager can delete products", http.StatusForbidden)
-		log.Println("Only manager can delete products")
-		return
-	}
-
-	id := ps.ByName("id")
-	for i, product := range sampleProducts {
-		if product.Id == id {
-			sampleProducts = append(sampleProducts[:i], sampleProducts[i+1:]...)
-			fmt.Fprintf(w, "Successfully deleted product with id %s", id)
-		}
-	}
-}
-
-func deltaQuantity(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	deviceId := r.Header.Get("X-Device")
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Request body empty", http.StatusBadRequest)
 		return
 	}
 
-	var deltaQuantity struct {
-		Id    string `json:"id"`
-		Delta int    `json:"delta"`
-	}
-	if err = json.Unmarshal(reqBody, &deltaQuantity); err != nil {
+	var deviceState []Product
+	if err = json.Unmarshal(reqBody, &deviceState); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		log.Println(err)
 		return
 	}
 
-	for i := range sampleProducts {
-		if sampleProducts[i].Id == deltaQuantity.Id {
-			sampleProducts[i].Quantity += deltaQuantity.Delta
-
-			json.NewEncoder(w).Encode(sampleProducts[i])
-			log.Println(sampleProducts[i])
-			return
+	for i := range deviceState {
+		product := deviceState[i]
+		// handle deleted state
+		if product.Deleted {
+			delete(sampleProducts, product.Id)
+			delete(productDeviceSubtotal, product.Id)
+			continue
 		}
+		// handle created
+		if product.Id == "" {
+			product.Id = uuidv4()
+			sampleProducts[product.Id] = &product
+		}
+		// handle updated
+		if product.LastTimeModified > sampleProducts[product.Id].LastTimeModified {
+			sampleProducts[product.Id] = &product
+		}
+
+		// handleUpdated
+		if _, ok := productDeviceSubtotal[product.Id]; !ok {
+			productDeviceSubtotal[product.Id] = map[string]int{}
+		}
+		productDeviceSubtotal[product.Id][deviceId] = product.Quantity
+
+		// update total quantiy to database
+		sampleProducts[product.Id].Quantity = totalForProduct(product.Id)
 	}
+
+	json.NewEncoder(w).Encode(sampleProducts)
+	log.Println(sampleProducts)
+}
+
+func totalForProduct(productId string) int {
+	total := 0
+	for _, v := range productDeviceSubtotal[productId] {
+		total += v
+	}
+	return total
 }
