@@ -285,44 +285,6 @@ func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 }
 
-func updateProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id := ps.ByName("id")
-
-	reqBody, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		http.Error(w, "Request body empty", http.StatusBadRequest)
-		return
-	}
-	var updatedProduct Product
-	if err = json.Unmarshal(reqBody, &updatedProduct); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		log.Println(err)
-		return
-	}
-
-	for i, product := range sampleProducts {
-		if product.Id == id {
-			log.Printf("Found product %v\n", product)
-
-			if updatedProduct.Manufacturer != "" {
-				sampleProducts[i].Manufacturer = updatedProduct.Manufacturer
-			}
-			if updatedProduct.Model != "" {
-				sampleProducts[i].Model = updatedProduct.Model
-			}
-			if updatedProduct.Price != 0 {
-				sampleProducts[i].Price = updatedProduct.Price
-			}
-			if updatedProduct.Quantity != 0 {
-				sampleProducts[i].Quantity = updatedProduct.Quantity
-			}
-			json.NewEncoder(w).Encode(sampleProducts[i])
-			log.Println(sampleProducts[i])
-			return
-		}
-	}
-}
-
 func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	deviceId := r.Header.Get("X-Device")
 	reqBody, err := ioutil.ReadAll(r.Body)
@@ -331,7 +293,7 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	var deviceState []Product
+	var deviceState map[string]Product
 	if err = json.Unmarshal(reqBody, &deviceState); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		log.Println(err)
@@ -340,34 +302,49 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	for i := range deviceState {
 		product := deviceState[i]
-		// handle deleted state
+
 		if product.Deleted {
 			delete(sampleProducts, product.Id)
 			delete(productDeviceSubtotal, product.Id)
 			continue
 		}
-		// handle created
-		if product.Id == "" {
-			product.Id = uuidv4()
-			sampleProducts[product.Id] = &product
+
+		if _, ok := sampleProducts[product.Id]; !ok {
+			addProduct(product, deviceId)
+			continue
 		}
-		// handle updated
+
 		if product.LastTimeModified > sampleProducts[product.Id].LastTimeModified {
-			sampleProducts[product.Id] = &product
+			updateProduct(product, deviceId)
+			continue
 		}
+	}
+	sumupTotalQuantities()
+	respondWithUpdatedProducts(w)
+}
 
-		// handleUpdated
-		if _, ok := productDeviceSubtotal[product.Id]; !ok {
-			productDeviceSubtotal[product.Id] = map[string]int{}
-		}
-		productDeviceSubtotal[product.Id][deviceId] = product.Quantity
-
-		// update total quantiy to database
-		sampleProducts[product.Id].Quantity = totalForProduct(product.Id)
+func updateProduct(product Product, deviceId string) {
+	sampleProducts[product.Id] = &product
+	if _, ok := productDeviceSubtotal[product.Id]; !ok {
+		productDeviceSubtotal[product.Id] = map[string]int{}
 	}
 
-	json.NewEncoder(w).Encode(sampleProducts)
-	log.Println(sampleProducts)
+	productDeviceSubtotal[product.Id][deviceId] = product.Quantity
+}
+
+func addProduct(product Product, deviceId string) {
+	sampleProducts[product.Id] = &product
+
+	productDeviceSubtotal[product.Id] = map[string]int{}
+	productDeviceSubtotal[product.Id][deviceId] = product.Quantity
+
+	sampleProducts[product.Id].Quantity = totalForProduct(product.Id)
+}
+
+func sumupTotalQuantities() {
+	for productId := range sampleProducts {
+		sampleProducts[productId].Quantity = totalForProduct(productId)
+	}
 }
 
 func totalForProduct(productId string) int {
@@ -376,4 +353,9 @@ func totalForProduct(productId string) int {
 		total += v
 	}
 	return total
+}
+
+func respondWithUpdatedProducts(w http.ResponseWriter) {
+	json.NewEncoder(w).Encode(sampleProducts)
+	log.Println(sampleProducts)
 }
