@@ -4,10 +4,15 @@ class User {
 
   User({this.email, this.role});
 
-  factory User.fromJson(Map<String,dynamic> json) {
+  factory User.fromJson(Map<String, dynamic> json) {
     return User(
       email: json['email'],
       role: json['role'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'email': email,
+        'role': role,
+      };
 }

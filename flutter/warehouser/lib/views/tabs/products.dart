@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:warehouser/_routing/routes.dart';
+import 'package:warehouser/utils/utils.dart';
 import '../../model/Product.dart';
 import '../../services/resource.dart';
 
@@ -11,7 +12,7 @@ class ProductsPage extends StatefulWidget {
 
 class _ProductsPageState extends State<ProductsPage> {
   List<Product> _products;
-  Exception _exception;
+  Error _exception;
 
   RefreshController _refreshController =
       RefreshController(initialRefresh: false);
@@ -19,6 +20,7 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   void initState() {
     fetchProducts();
+    _refreshController.refreshCompleted();
     super.initState();
   }
 
@@ -26,7 +28,7 @@ class _ProductsPageState extends State<ProductsPage> {
     try {
       final products = await ResourceService.getAllProducts();
       setState(() {
-        _products = products;
+        _products = products.where((product) => !product.deleted).toList();
         _exception = null;
       });
     } catch (e) {
@@ -34,6 +36,7 @@ class _ProductsPageState extends State<ProductsPage> {
         _products = null;
         _exception = e;
       });
+      throw e;
     }
   }
 
@@ -43,6 +46,11 @@ class _ProductsPageState extends State<ProductsPage> {
     _refreshController.refreshCompleted();
   }
 
+  Future _synchronize() async {
+    await ResourceService.synchronize();
+    toast("synchronization complete");
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget mainContent;
@@ -50,7 +58,7 @@ class _ProductsPageState extends State<ProductsPage> {
       mainContent = CircularProgressIndicator();
     } else if (_exception != null) {
       mainContent = Text("Exception: ${_exception.toString()}");
-    } else {
+    } else if (_products != null){
       mainContent = ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _products.length,
@@ -69,6 +77,8 @@ class _ProductsPageState extends State<ProductsPage> {
                 icon: Icon(Icons.add),
                 onPressed: () =>
                     Navigator.pushNamed(context, createProductViewPage)),
+            IconButton(
+                icon: Icon(Icons.refresh), onPressed: () => _synchronize()),
           ],
         ),
         body: SmartRefresher(
@@ -84,8 +94,8 @@ class _ProductsPageState extends State<ProductsPage> {
       ),
       subtitle: Text("\$${product.price} QA:${product.quantity}"),
       trailing: Icon(Icons.phone_android),
-      onTap: () => Navigator.pushNamed(context, editProductViewPage,
-          arguments: product),
+      onTap: () =>
+          Navigator.pushNamed(context, editProductViewPage, arguments: product),
     );
   }
 }
