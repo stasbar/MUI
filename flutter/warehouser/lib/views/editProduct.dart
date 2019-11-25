@@ -15,9 +15,8 @@ class EditProductPage extends StatefulWidget {
 
 class _EditProductState extends State<EditProductPage> {
   final _formKey = GlobalKey<FormState>();
-  final Map<String, dynamic> update = Map();
+  Map<String, dynamic> _product = Map();
 
-  Product _product;
   Exception _exception;
   int _delta;
 
@@ -39,24 +38,26 @@ class _EditProductState extends State<EditProductPage> {
 
   Future fetchProduct() async {
     setState(() {
-      _product = widget.product;
+      _product = widget.product.toJson();
     });
   }
 
   void _submit(BuildContext context) async {
     if (_formKey.currentState.validate()) {
       if (isInEditModel()) {
-        safely(context,
-            () => ResourceService.updateProduct(widget.product.id, update));
+        verbose(context, () {
+          var product = Product.fromJson(_product);
+          ResourceService.updateProduct(product);
+        });
       } else {
-        final product = new Product.fromJson(update);
-        safely(context, () => ResourceService.createProduct(product));
+        final product = new Product.fromJson(_product);
+        verbose(context, () => ResourceService.createProduct(product));
       }
     }
   }
 
   void _delete(BuildContext context) async {
-    safely(context, () => ResourceService.deleteProduct(widget.product.id));
+    verbose(context, () => ResourceService.deleteProduct(widget.product.id));
   }
 
   void _decreaseDelta(BuildContext context) async {
@@ -68,7 +69,7 @@ class _EditProductState extends State<EditProductPage> {
   }
 
   void _performDelta(BuildContext context, int delta) {
-    safely(context, () {
+    verbose(context, () {
       print(_delta);
       if (delta == null || delta == 0) {
         throw new Exception("Please enter value first");
@@ -78,9 +79,10 @@ class _EditProductState extends State<EditProductPage> {
     });
   }
 
-  void safely(BuildContext context, Function func) async {
+  void verbose(BuildContext context, Function func) async {
     try {
       await func();
+      Navigator.pop(context);
     } catch (e) {
       Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.message)));
     }
@@ -189,7 +191,7 @@ class _EditProductState extends State<EditProductPage> {
                     }
                     return null;
                   },
-                  onChanged: (text) => update['manufacturer'] =
+                  onChanged: (text) => _product['manufacturer'] =
                       product == null || text != product.manufacturer
                           ? text
                           : null,
@@ -215,7 +217,7 @@ class _EditProductState extends State<EditProductPage> {
                     }
                     return null;
                   },
-                  onChanged: (text) => update['model'] =
+                  onChanged: (text) => _product['model'] =
                       product == null || text != product.model ? text : null,
                   initialValue: product != null ? product.model : "",
                 ),
@@ -239,7 +241,7 @@ class _EditProductState extends State<EditProductPage> {
                     }
                     return null;
                   },
-                  onChanged: (text) => update['price'] =
+                  onChanged: (text) => _product['price'] =
                       product == null || int.tryParse(text) != product.price
                           ? int.tryParse(text)
                           : null,
@@ -274,13 +276,11 @@ class _EditProductState extends State<EditProductPage> {
 
     Widget mainContent;
     if (isInEditModel()) {
-      if (_product == null && _exception == null) {
-        mainContent = CircularProgressIndicator();
+      if (_exception == null) {
+        mainContent = form(Product.fromJson(_product));
       } else if (_exception != null) {
         mainContent = Text("Exception: ${_exception.toString()}");
-      } else {
-        mainContent = form(_product);
-      }
+      } else {}
     } else {
       mainContent = form(null);
     }
