@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+import 'package:warehouser/dao/productsDao.dart';
 import 'package:warehouser/model/Product.dart';
 import 'package:warehouser/model/User.dart';
-import 'package:device_id/device_id.dart';
 import 'package:warehouser/services/authorization.dart';
+import 'package:warehouser/utils/const.dart';
 import 'package:warehouser/utils/utils.dart';
 
 class ResourceService {
@@ -15,7 +17,7 @@ class ResourceService {
 
   static HttpClient httpClient = new HttpClient()
     ..badCertificateCallback =
-    ((X509Certificate cert, String host, int port) => true);
+        ((X509Certificate cert, String host, int port) => true);
 
   static IOClient ioClient = new IOClient(httpClient);
 
@@ -55,110 +57,52 @@ class ResourceService {
   }
 
   static Future<List<Product>> getAllProducts() async {
-    final prefs = await SharedPreferences.getInstance();
-    final productsString = prefs.getString('products');
-    Map<String, dynamic> productsJson = json.decode(productsString);
-    List<Product> products = productsJson.map((id, product) =>
-        MapEntry(id, Product.fromJson(product))).values;
+    final productsMap = await ProductsDao.getProductsMap();
+    print("productsMap: $productsMap ");
+    final quantitiesMap = await ProductsDao.getQuantitiesMap();
+    final remQuantitiesMap = await ProductsDao.getRemQuantitiesMap();
+
+    List<Product> products = productsMap.values.map((product) {
+      final quantity = getOrZero(product['id'], quantitiesMap) +
+          getOrZero(product['id'], remQuantitiesMap);
+      product['quantity'] = quantity;
+      return Product.fromJson(product);
+    }).toList();
+
+    print("products $products");
     return products;
   }
 
-  static synchronize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final productsString = prefs.getString('products');
-    final quantitiesString = prefs.getString('quantities');
-    final remQuantitiesString = prefs.getString('remQuantities');
-    Map<String, dynamic> products = json.decode(productsString);
-    Map<String, dynamic> quantities = json.decode(quantitiesString);
-    Map<String, dynamic> remQuantities = json.decode(remQuantitiesString);
-
-    products.forEach((id, productMap) {
-      products[id]['quantity'] = quantities[id];
-    });
-
-    final url = '$baseUrl/sync';
-    print(url);
-    final response = await ioClient.post(url, body: productsString, headers: {
-      'Authorization': 'bearer ${await AuthorizationService.accessToken()}'
-    });
-
-    if (response.statusCode != 200) {
-      throw Exception('Failed to get all product reason: ${response.body}');
-    }
-
-    Map<String, dynamic> resProducts = json.decode(response.body);
-    resProducts.forEach((id, productMap) {
-      // update server state
-      remQuantities[id] = productMap['quantity'] - quantities[id];
-    });
-
-    _persistAllProducts(resProducts);
-  }
-
-  static _persistAllProducts(Map<String, dynamic> productsJson) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('products', jsonEncode(productsJson));
-  }
-
-  //TODO refactor
-  static _persistProduct(Product product) async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!prefs.containsKey('products')) {
-      await prefs.setString('products', jsonEncode({}));
-    }
-    String localProducts = prefs.getString('products');
-    Map<String, dynamic> localMap = jsonDecode(localProducts);
-    localMap[product.id] = product;
-
-    await prefs.setString('products', jsonEncode(localMap));
-  }
-
-  //TODO refactor
-  static updateProduct(String productId, Map<String, dynamic> update) async {
-    final url = '$baseUrl/products/$productId';
-    print(url);
-    final response = await ioClient.put(url,
-        body: json.encode(update),
-        headers: {
-          'Authorization': 'bearer ${await AuthorizationService.accessToken()}'
-        });
-    if (response.statusCode == 200) {
-      print(response.body);
+  static int getOrZero(String productId, Map<String, dynamic> map) {
+    if (map.containsKey(productId)) {
+      return map[productId];
     } else {
-      throw Exception('Failed to update product reason: ${response.body}');
+      return 0;
     }
   }
 
-  //TODO refactor
+  static updateProduct(Product product) async {
+    final productJson = product.toJson();
+    productJson['lastTimeModified'] = new DateTime.now().millisecondsSinceEpoch;
+    final localMap = await ProductsDao.getProductsMap();
+    localMap[product.id] = productJson;
+    ProductsDao.putProductsMap(localMap);
+  }
+
+  static createProduct(Product product) async {
+    final productJson = product.toJson();
+    productJson['lastTimeModified'] = new DateTime.now().millisecondsSinceEpoch;
+    productJson['id'] = Uuid().v4();
+    productJson['deleted'] = false;
+    final localMap = await ProductsDao.getProductsMap();
+    localMap[productJson['id']] = productJson;
+    ProductsDao.putProductsMap(localMap);
+  }
+
   static deleteProduct(String productId) async {
-    final url = '$baseUrl/products/$productId';
-    print(url);
-    final response = await ioClient.delete(url, headers: {
-      'Authorization': 'bearer ${await AuthorizationService.accessToken()}'
-    });
-    if (response.statusCode == 200) {
-      print(response.body);
-    } else {
-      throw Exception('Failed to delete product reason: ${response.body}');
-    }
-  }
-
-  static createProduct(Product product) async {}
-
-  static pushProduct(Product product) async {
-    final url = '$baseUrl/products';
-    print(url);
-
-    final response = await ioClient.post(url,
-        body: jsonEncode(product),
-        headers: {
-          'Authorization': 'bearer ${await AuthorizationService.accessToken()}'
-        });
-    if (response.statusCode == 201) {
-      print(response.body);
-    } else {
-      throw Exception('Failed to create product reason: ${response.body}');
-    }
+    final localMap = await ProductsDao.getProductsMap();
+    localMap[productId]['deleted'] = true;
+    ProductsDao.putProductsMap(localMap);
   }
 
   static deltaQuantity(String productId, int delta) async {
@@ -176,27 +120,67 @@ class ResourceService {
     quantitiesString = jsonEncode(quantitiesJson);
 
     await prefs.setString('quantities', quantitiesString);
-
-    await sync();
   }
 
-  static sync() async {
+  static synchronize() async {
+    final prefs = await SharedPreferences.getInstance();
+    final productsString = prefs.getString('products');
+    final quantitiesString = prefs.getString('quantities');
+    final remQuantitiesString = prefs.getString('remQuantities');
+    Map<String, dynamic> products =
+        productsString != null ? jsonDecode(productsString) : Map();
+    Map<String, dynamic> quantities =
+        quantitiesString != null ? jsonDecode(quantitiesString) : Map();
+    Map<String, dynamic> remQuantities =
+        remQuantitiesString != null ? jsonDecode(remQuantitiesString) : Map();
+    products.forEach((id, productMap) {
+      products[id]['quantity'] = quantities[id];
+    });
+
     final url = '$baseUrl/sync';
     print(url);
-
-    final deviceId = await DeviceId.getID;
-    final email = AuthorizationService.currentUser.email;
-    final prefs = await SharedPreferences.getInstance();
-
     final response =
-    await ioClient.post(url, body: prefs.getString(email), headers: {
+        await ioClient.post(url, body: jsonEncode(products), headers: {
       'Authorization': 'bearer ${await AuthorizationService.accessToken()}',
-      'DeviceId': deviceId
+      'X-Device': prefs.getString(INSTALLATION_ID)
     });
-    if (response.statusCode == 200) {
-      print(response.body);
-    } else {
-      throw Exception('Failed to create product reason: ${response.body}');
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get all product reason: ${response.body}');
     }
+
+    Map<String, dynamic> remoteProducts = json.decode(response.body);
+
+    await synchronizeProducts(remoteProducts, products, prefs);
+    await synchronizeQuantities(
+        remoteProducts, remQuantities, quantities, prefs);
+  }
+
+  static Future synchronizeProducts(Map<String, dynamic> remoteProducts,
+      Map<String, dynamic> products, SharedPreferences prefs) async {
+    remoteProducts.forEach((id, productMap) {
+      final remoteProduct = Product.fromJson(productMap);
+      if (products.containsKey(id)) {
+        final localProduct = Product.fromJson(products[id]);
+        if (remoteProduct.lastTimeModified >= localProduct.lastTimeModified) {
+          products[id] = remoteProduct;
+        }
+      } else {
+        products[id] = remoteProduct;
+      }
+    });
+
+    await prefs.setString('products', jsonEncode(products));
+  }
+
+  static Future synchronizeQuantities(
+      Map<String, dynamic> remoteProducts,
+      Map<String, dynamic> remQuantities,
+      Map<String, dynamic> quantities,
+      SharedPreferences prefs) async {
+    remoteProducts.forEach((id, productMap) {
+      remQuantities[id] = productMap['quantity'] - getOrZero(id, quantities);
+    });
+    await prefs.setString('remQuantities', jsonEncode(remQuantities));
   }
 }
