@@ -76,9 +76,7 @@ router.post('/', csrfProtection, function (req, res, next) {
     // This tells hydra to remember the browser and automatically authenticate the user in future requests. This will
     // set the "skip" parameter in the other route to true on subsequent requests!
     remember: Boolean(req.body.remember),
-
-    // When the session expires, in seconds. Set this to 0 so it will never expire.
-    remember_for: 60 * 60 * 12, // 12 hours
+    remember_for: 60 * 60 * 24 * 90, // 90 days
 
     // Sets which "level" (e.g. 2-factor authentication) of authentication the user has. The value is really arbitrary
     // and optional. In the context of OpenID Connect, a value of 0 indicates the lowest authorization level.
@@ -92,20 +90,6 @@ router.post('/', csrfProtection, function (req, res, next) {
     .catch(function (error) {
       next(error);
     });
-
-  // You could also deny the login request which tells hydra that no one authenticated!
-  // hydra.rejectLoginRequest(challenge, {
-  //   error: 'invalid_request',
-  //   error_description: 'The user did something stupid...'
-  // })
-  //   .then(function (response) {
-  //     // All we need to do now is to redirect the browser back to hydra!
-  //     res.redirect(response.redirect_to);
-  //   })
-  //   // This will handle any error that happens when making HTTP calls to hydra
-  //   .catch(function (error) {
-  //     next(error);
-  //   });
 });
 
 async function authenticateWithGoogle(res, next, challenge, googleIdToken) {
@@ -117,7 +101,7 @@ async function authenticateWithGoogle(res, next, challenge, googleIdToken) {
     validateGoogleToken(token);
     const response = await hydra.acceptLoginRequest(challenge, {
       subject: token.email,
-      remember_for: 60 * 60 * 24,
+      remember_for: 60 * 60 * 24 * 90,
     })
     res.redirect(response.redirect_to);
   } catch (error) {
@@ -156,7 +140,7 @@ async function authenticateWithFacebook(res, next, challenge, facebookIdToken) {
     console.log(user);
     const response = await hydra.acceptLoginRequest(challenge, {
       subject: user.email,
-      remember_for: 60 * 60 * 24,
+      remember_for: 60 * 60 * 24 * 90,
     })
     res.redirect(response.redirect_to);
   }catch (error){

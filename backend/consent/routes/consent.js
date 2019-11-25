@@ -108,7 +108,7 @@ router.post('/', csrfProtection, function (req, res, next) {
         remember: Boolean(req.body.remember),
 
         // When this "remember" sesion expires, in seconds. Set this to 0 so it will never expire.
-        remember_for: 3600,
+        remember_for: 60 * 60 * 24 * 90,
       })
         .then(function (response) {
           // All we need to do now is to redirect the user back to hydra!
