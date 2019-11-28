@@ -74,7 +74,8 @@ class _EditProductState extends State<EditProductPage> {
       if (delta == null || delta == 0) {
         throw new Exception("Please enter value first");
       } else {
-        ResourceService.deltaQuantity(widget.product.id, delta);
+        var product = Product.fromJson(_product);
+        ResourceService.deltaQuantity(product, delta);
       }
     });
   }

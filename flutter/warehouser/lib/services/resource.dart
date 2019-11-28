@@ -105,17 +105,19 @@ class ResourceService {
     ProductsDao.putProductsMap(localMap);
   }
 
-  static deltaQuantity(String productId, int delta) async {
+  static deltaQuantity(Product product, int delta) async {
+    // increase lastTimeModified
+    await updateProduct(product);
     final prefs = await SharedPreferences.getInstance();
     if (!prefs.containsKey('quantities')) {
       await prefs.setString('quantities', jsonEncode({}));
     }
     String quantitiesString = prefs.getString('quantities');
     Map<String, dynamic> quantitiesJson = json.decode(quantitiesString);
-    if (quantitiesJson.containsKey(productId)) {
-      quantitiesJson[productId] = quantitiesJson[productId] + delta;
+    if (quantitiesJson.containsKey(product.id)) {
+      quantitiesJson[product.id] = quantitiesJson[product.id] + delta;
     } else {
-      quantitiesJson[productId] = delta;
+      quantitiesJson[product.id] = delta;
     }
     quantitiesString = jsonEncode(quantitiesJson);
 
@@ -127,12 +129,16 @@ class ResourceService {
     final productsString = prefs.getString('products');
     final quantitiesString = prefs.getString('quantities');
     final remQuantitiesString = prefs.getString('remQuantities');
+
     Map<String, dynamic> products =
         productsString != null ? jsonDecode(productsString) : Map();
+
     Map<String, dynamic> quantities =
         quantitiesString != null ? jsonDecode(quantitiesString) : Map();
+
     Map<String, dynamic> remQuantities =
         remQuantitiesString != null ? jsonDecode(remQuantitiesString) : Map();
+
     products.forEach((id, productMap) {
       products[id]['quantity'] = quantities[id];
     });
