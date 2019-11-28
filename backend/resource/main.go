@@ -89,24 +89,24 @@ var sampleProducts = map[string]*Product{
 // initial subtotals
 var productDeviceSubtotal = map[string]map[string]int{
 	"123asd": map[string]int{
-		"123": 10,
-		"234": -5,
+		"123": 3,
+		"234": -2,
 	},
 	"234sdf": map[string]int{
-		"123": -20,
-		"234": 30,
+		"123": 4,
+		"234": -2,
 	},
 	"345dfg": map[string]int{
-		"123": -20,
-		"234": 30,
+		"123": 5,
+		"234": -2,
 	},
 	"456fgh": map[string]int{
-		"123": -20,
-		"234": 30,
+		"123": 6,
+		"234": -2,
 	},
 	"567ghj": map[string]int{
-		"123": -20,
-		"234": 30,
+		"123": 7,
+		"234": -2,
 	},
 }
 
@@ -304,17 +304,20 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		product := deviceState[i]
 
 		if product.Deleted {
+			log.Printf("Delete product %v \n", product)
 			delete(sampleProducts, product.Id)
 			delete(productDeviceSubtotal, product.Id)
 			continue
 		}
 
 		if _, ok := sampleProducts[product.Id]; !ok {
+			log.Printf("Add product %v \n", product)
 			addProduct(product, deviceId)
 			continue
 		}
 
 		if product.LastTimeModified > sampleProducts[product.Id].LastTimeModified {
+			log.Printf("Update product %v \n", product)
 			updateProduct(product, deviceId)
 			continue
 		}
