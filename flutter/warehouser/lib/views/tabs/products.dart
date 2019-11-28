@@ -46,9 +46,19 @@ class _ProductsPageState extends State<ProductsPage> {
     _refreshController.refreshCompleted();
   }
 
-  Future _synchronize() async {
-    await ResourceService.synchronize();
-    toast("synchronization complete");
+  Future _synchronize(BuildContext context) async {
+    verbose(context, () async {
+      await ResourceService.synchronize();
+      toast("synchronization complete");
+    });
+  }
+
+  void verbose(BuildContext context, Function func) async {
+    try {
+      await func();
+    } catch (e) {
+      Scaffold.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    }
   }
 
   @override
@@ -58,7 +68,7 @@ class _ProductsPageState extends State<ProductsPage> {
       mainContent = CircularProgressIndicator();
     } else if (_exception != null) {
       mainContent = Text("Exception: ${_exception.toString()}");
-    } else if (_products != null){
+    } else if (_products != null) {
       mainContent = ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _products.length,
@@ -78,7 +88,8 @@ class _ProductsPageState extends State<ProductsPage> {
                 onPressed: () =>
                     Navigator.pushNamed(context, createProductViewPage)),
             IconButton(
-                icon: Icon(Icons.refresh), onPressed: () => _synchronize()),
+                icon: Icon(Icons.refresh),
+                onPressed: () => _synchronize(context)),
           ],
         ),
         body: SmartRefresher(
