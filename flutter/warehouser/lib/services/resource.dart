@@ -21,6 +21,11 @@ class ResourceService {
 
   static IOClient ioClient = new IOClient(httpClient);
 
+  static Future<String> getInstallationId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(INSTALLATION_ID);
+  }
+
   static Future<User> currentUser() async {
     final prefs = await SharedPreferences.getInstance();
     try {
@@ -66,6 +71,8 @@ class ResourceService {
       final quantity = getOrZero(product['id'], quantitiesMap) +
           getOrZero(product['id'], remQuantitiesMap);
       product['quantity'] = quantity;
+      product['quantityLocal'] = getOrZero(product['id'], quantitiesMap);
+      product['quantityRem'] = getOrZero(product['id'], remQuantitiesMap);
       return Product.fromJson(product);
     }).toList();
 
@@ -102,6 +109,9 @@ class ResourceService {
   static deleteProduct(String productId) async {
     final localMap = await ProductsDao.getProductsMap();
     localMap[productId]['deleted'] = true;
+    localMap[productId]['lastTimeModified'] =
+        new DateTime.now().millisecondsSinceEpoch;
+    ;
     ProductsDao.putProductsMap(localMap);
   }
 
