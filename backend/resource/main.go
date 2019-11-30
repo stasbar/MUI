@@ -90,23 +90,23 @@ var sampleProducts = map[string]*Product{
 var productDeviceSubtotal = map[string]map[string]int{
 	"123asd": map[string]int{
 		"123": 3,
-		"234": -2,
+		"234": -3,
 	},
 	"234sdf": map[string]int{
 		"123": 4,
-		"234": -2,
+		"234": -4,
 	},
 	"345dfg": map[string]int{
 		"123": 5,
-		"234": -2,
+		"234": -5,
 	},
 	"456fgh": map[string]int{
 		"123": 6,
-		"234": -2,
+		"234": -6,
 	},
 	"567ghj": map[string]int{
 		"123": 7,
-		"234": -2,
+		"234": -7,
 	},
 }
 
@@ -287,6 +287,8 @@ func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	deviceId := r.Header.Get("X-Device")
+	log.Printf("sync with deviceId: %s", deviceId)
+
 	reqBody, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Request body empty", http.StatusBadRequest)
@@ -302,13 +304,7 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	for i := range deviceState {
 		product := deviceState[i]
-
-		if product.Deleted {
-			log.Printf("Delete product %v \n", product)
-			delete(sampleProducts, product.Id)
-			delete(productDeviceSubtotal, product.Id)
-			continue
-		}
+		log.Printf("Product %v", product)
 
 		if _, ok := sampleProducts[product.Id]; !ok {
 			log.Printf("Add product %v \n", product)
@@ -316,8 +312,16 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			continue
 		}
 
+		if _, ok := productDeviceSubtotal[product.Id]; !ok {
+			productDeviceSubtotal[product.Id] = map[string]int{}
+		}
+		productDeviceSubtotal[product.Id][deviceId] = product.Quantity
+
 		if product.LastTimeModified > sampleProducts[product.Id].LastTimeModified {
 			log.Printf("Update product %v \n", product)
+			if product.Deleted {
+				log.Printf("Mark deleted product %v \n", product)
+			}
 			updateProduct(product, deviceId)
 			continue
 		}
@@ -328,11 +332,6 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 func updateProduct(product Product, deviceId string) {
 	sampleProducts[product.Id] = &product
-	if _, ok := productDeviceSubtotal[product.Id]; !ok {
-		productDeviceSubtotal[product.Id] = map[string]int{}
-	}
-
-	productDeviceSubtotal[product.Id][deviceId] = product.Quantity
 }
 
 func addProduct(product Product, deviceId string) {
@@ -359,6 +358,10 @@ func totalForProduct(productId string) int {
 }
 
 func respondWithUpdatedProducts(w http.ResponseWriter) {
+	log.Println("Responded with state")
+	for i := range sampleProducts {
+		log.Printf("Product %s %s quantity %d ", sampleProducts[i].Manufacturer, sampleProducts[i].Model, sampleProducts[i].Quantity)
+		log.Printf("Quantities map %v", productDeviceSubtotal[i])
+	}
 	json.NewEncoder(w).Encode(sampleProducts)
-	log.Println(sampleProducts)
 }
