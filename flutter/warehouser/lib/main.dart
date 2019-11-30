@@ -14,9 +14,9 @@ void main() {
 }
 
 void generateInstallationId() async {
- final prefs = await SharedPreferences.getInstance();
- if(!prefs.containsKey(INSTALLATION_ID )){
-   var uuid = Uuid();
-   prefs.setString(INSTALLATION_ID ,uuid.v4());
- }
+  final prefs = await SharedPreferences.getInstance();
+  if (!prefs.containsKey(INSTALLATION_ID)) {
+    var uuid = Uuid();
+    prefs.setString(INSTALLATION_ID, uuid.v4());
+  }
 }

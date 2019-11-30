@@ -103,7 +103,7 @@ class _ProductsPageState extends State<ProductsPage> {
       title: Text(
         product.manufacturer + "  " + product.model,
       ),
-      subtitle: Text("\$${product.price} QA:${product.quantity}"),
+      subtitle: Text("\$${product.price} QA:${product.quantity} Local: ${product.quantityLocal} Rem: ${product.quantityRem}"),
       trailing: Icon(Icons.phone_android),
       onTap: () =>
           Navigator.pushNamed(context, editProductViewPage, arguments: product),

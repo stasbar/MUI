@@ -12,10 +12,12 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePage extends State<ProfilePage>{
   User _currentUser;
   Exception _exception;
+  String _installationId;
 
   @override
   void initState() {
     fetchCurrentUser();
+    fetchInstallationId();
     super.initState();
   }
 
@@ -34,6 +36,11 @@ class _ProfilePage extends State<ProfilePage>{
       });
     }
   }
+
+  void fetchInstallationId() async {
+    _installationId = await ResourceService.getInstallationId();
+  }
+
 
   void _logout() async {
     await AuthorizationService.logout();
@@ -59,6 +66,11 @@ class _ProfilePage extends State<ProfilePage>{
               child: ListTile(
                 title: Text("Role"),
                 subtitle: Text(_currentUser.role),
+              )),
+          Card(
+              child: ListTile(
+                title: Text("DeviceId"),
+                subtitle: Text(_installationId),
               )),
         ]),
       );
