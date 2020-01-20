@@ -1,4 +1,4 @@
-class Product{
+class Product {
   final String id;
   final String manufacturer;
   final String model;
@@ -8,10 +8,25 @@ class Product{
   final int quantityRem;
   final bool deleted;
   final int lastTimeModified;
+  final int width;
+  final int height;
+  final int length;
 
-  Product({this.id, this.manufacturer, this.model, this.price, this.quantity, this.lastTimeModified, this.deleted, this.quantityLocal, this.quantityRem});
+  Product(
+      {this.id,
+      this.manufacturer,
+      this.model,
+      this.price,
+      this.quantity,
+      this.lastTimeModified,
+      this.deleted,
+      this.quantityLocal,
+      this.quantityRem,
+      this.width,
+      this.height,
+      this.length});
 
-  factory Product.fromJson(Map<String,dynamic> json) {
+  factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
       id: json['id'],
       manufacturer: json['manufacturer'],
@@ -22,11 +37,13 @@ class Product{
       deleted: json['deleted'],
       quantityLocal: json['quantityLocal'],
       quantityRem: json['quantityRem'],
+      width: json['width'],
+      height: json['height'],
+      length: json['length'],
     );
   }
 
-  Map<String, dynamic> toJson() =>
-      {
+  Map<String, dynamic> toJson() => {
         'id': id,
         'manufacturer': manufacturer,
         'model': model,
@@ -36,5 +53,8 @@ class Product{
         'deleted': deleted,
         'quantityLocal': quantityLocal,
         'quantityRem': quantityRem,
+        'width': width,
+        'height': height,
+        'length': length,
       };
 }

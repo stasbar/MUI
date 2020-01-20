@@ -12,6 +12,20 @@ class ProductsDao {
     return jsonDecode(productsString);
   }
 
+  static setWarehouse(String warehouse) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('warehouse', warehouse);
+  }
+
+  static Future<String> getWarehouse(String defaultValue) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey('warehouse')) {
+      return prefs.getString('warehouse');
+    } else {
+      return defaultValue;
+    }
+  }
+
   static putProductsMap(Map<String, dynamic> productsMap) async {
     final prefs = await SharedPreferences.getInstance();
     print("productsMap: $productsMap");

@@ -248,6 +248,100 @@ class _EditProductState extends State<EditProductPage> {
                           : null,
                   initialValue: product != null ? product.price.toString() : "",
                 ),
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Width',
+                          labelStyle: TextStyle(color: Colors.white),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        keyboardType: TextInputType.text,
+                        style: TextStyle(color: Colors.white),
+                        cursorColor: Colors.white,
+                        validator: (value) {
+                          if (value.isEmpty) {
+                            return 'Can not be empty';
+                          }
+                          return null;
+                        },
+                        onChanged: (text) => _product['width'] =
+                            product == null ||
+                                    int.tryParse(text) != product.width
+                                ? int.tryParse(text)
+                                : null,
+                        initialValue:
+                            product != null ? product.width.toString() : "",
+                      ),
+                    ),
+                    Flexible(
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Height',
+                          labelStyle: TextStyle(color: Colors.white),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        keyboardType: TextInputType.text,
+                        style: TextStyle(color: Colors.white),
+                        cursorColor: Colors.white,
+                        validator: (value) {
+                          if (value.isEmpty) {
+                            return 'Can not be empty';
+                          }
+                          return null;
+                        },
+                        onChanged: (text) => _product['height'] =
+                            product == null ||
+                                    int.tryParse(text) != product.height
+                                ? int.tryParse(text)
+                                : null,
+                        initialValue:
+                            product != null ? product.height.toString() : "",
+                      ),
+                    ),
+                    Flexible(
+                      child: TextFormField(
+                        decoration: InputDecoration(
+                          labelText: 'Length',
+                          labelStyle: TextStyle(color: Colors.white),
+                          enabledBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                          focusedBorder: UnderlineInputBorder(
+                            borderSide: BorderSide(color: Colors.white),
+                          ),
+                        ),
+                        keyboardType: TextInputType.text,
+                        style: TextStyle(color: Colors.white),
+                        cursorColor: Colors.white,
+                        validator: (value) {
+                          if (value.isEmpty) {
+                            return 'Can not be empty';
+                          }
+                          return null;
+                        },
+                        onChanged: (text) => _product['length'] =
+                            product == null ||
+                                    int.tryParse(text) != product.length
+                                ? int.tryParse(text)
+                                : null,
+                        initialValue:
+                            product != null ? product.length.toString() : "",
+                      ),
+                    ),
+                  ],
+                )
               ],
             ),
           ),

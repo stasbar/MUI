@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:http/io_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:warehouser/_routing/routes.dart';
+import 'package:warehouser/dao/migrations/migrations.dart';
 import 'package:warehouser/dao/productsDao.dart';
 import 'package:warehouser/model/Product.dart';
 import 'package:warehouser/model/User.dart';
@@ -61,6 +63,22 @@ class ResourceService {
     await prefs.setString('currentUser', jsonEncode(user));
   }
 
+  static Future<List<String>> getAllWarehouses() async {
+    final prefs = await SharedPreferences.getInstance();
+    final url = '$baseUrl/warehouses';
+    print(url);
+    final response = await ioClient.get(url, headers: {
+      'Authorization': 'bearer ${await AuthorizationService.accessToken()}',
+      'X-Device': prefs.getString(INSTALLATION_ID)
+    });
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to get all product reason: ${response.body}');
+    }
+
+    return (jsonDecode(response.body) as List<dynamic>).cast<String>();
+  }
+
   static Future<List<Product>> getAllProducts() async {
     final productsMap = await ProductsDao.getProductsMap();
     print("productsMap: $productsMap ");
@@ -73,6 +91,7 @@ class ResourceService {
       product['quantity'] = quantity;
       product['quantityLocal'] = getOrZero(product['id'], quantitiesMap);
       product['quantityRem'] = getOrZero(product['id'], remQuantitiesMap);
+      product = Migrations.migrate(product);
       return Product.fromJson(product);
     }).toList();
 
@@ -153,7 +172,8 @@ class ResourceService {
       products[id]['quantity'] = quantities[id];
     });
 
-    final url = '$baseUrl/sync';
+    final warehouse = await ProductsDao.getWarehouse("");
+    final url = '$baseUrl/sync?warehouse=$warehouse';
     print(url);
     final response =
         await ioClient.post(url, body: jsonEncode(products), headers: {

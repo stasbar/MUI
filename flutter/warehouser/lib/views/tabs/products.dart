@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 import 'package:warehouser/_routing/routes.dart';
+import 'package:warehouser/dao/productsDao.dart';
 import 'package:warehouser/utils/utils.dart';
 import '../../model/Product.dart';
 import '../../services/resource.dart';
@@ -12,6 +13,8 @@ class ProductsPage extends StatefulWidget {
 
 class _ProductsPageState extends State<ProductsPage> {
   List<Product> _products;
+  List<String> _warehouses = [];
+  String _dropdownValue;
   Error _exception;
 
   RefreshController _refreshController =
@@ -20,8 +23,28 @@ class _ProductsPageState extends State<ProductsPage> {
   @override
   void initState() {
     fetchProducts();
+    fetchWarehouses();
     _refreshController.refreshCompleted();
     super.initState();
+  }
+
+  Future fetchWarehouses() async {
+    try {
+      List<String> warehouses = await ResourceService.getAllWarehouses();
+      String warehouse = await ProductsDao.getWarehouse(warehouses[0]);
+      print(warehouses);
+      setState(() {
+        _warehouses = warehouses;
+        _dropdownValue = warehouse;
+        _exception = null;
+      });
+    } catch (e) {
+      setState(() {
+        _warehouses = null;
+        _exception = e;
+      });
+      throw e;
+    }
   }
 
   Future fetchProducts() async {
@@ -69,14 +92,44 @@ class _ProductsPageState extends State<ProductsPage> {
     } else if (_exception != null) {
       mainContent = Text("Exception: ${_exception.toString()}");
     } else if (_products != null) {
-      mainContent = ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _products.length,
-        itemBuilder: (BuildContext _context, int i) {
-          final product = _products[i];
-          return _buildRow(context, product);
-        },
+      mainContent = Expanded(
+        child: ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: _products.length,
+          itemBuilder: (BuildContext _context, int i) {
+            final product = _products[i];
+            return _buildRow(context, product);
+          },
+        ),
       );
+    }
+    Widget warehouses;
+    if (_warehouses != null) {
+      warehouses = DropdownButton(
+        value: _dropdownValue,
+        icon: Icon(Icons.arrow_downward),
+        iconSize: 24,
+        elevation: 16,
+        style: TextStyle(color: Colors.deepPurple),
+        underline: Container(
+          height: 2,
+          color: Colors.deepPurpleAccent,
+        ),
+        onChanged: (String newValue) {
+          setState(() {
+            _dropdownValue = newValue;
+          });
+          ProductsDao.setWarehouse(newValue);
+        },
+        items: _warehouses.map<DropdownMenuItem<String>>((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
+      );
+    } else {
+      warehouses = Text("Failed to fetch warehouses");
     }
 
     return Scaffold(
@@ -95,7 +148,7 @@ class _ProductsPageState extends State<ProductsPage> {
         body: SmartRefresher(
             controller: _refreshController,
             onRefresh: _onRefresh,
-            child: mainContent));
+            child: Column(children: [warehouses, mainContent])));
   }
 
   Widget _buildRow(BuildContext context, Product product) {
@@ -103,7 +156,8 @@ class _ProductsPageState extends State<ProductsPage> {
       title: Text(
         product.manufacturer + "  " + product.model,
       ),
-      subtitle: Text("\$${product.price} QA:${product.quantity} Local: ${product.quantityLocal} Rem: ${product.quantityRem}"),
+      subtitle: Text(
+          "\$${product.price} QA:${product.quantity} Local: ${product.quantityLocal} Rem: ${product.quantityRem}"),
       trailing: Icon(Icons.phone_android),
       onTap: () =>
           Navigator.pushNamed(context, editProductViewPage, arguments: product),
