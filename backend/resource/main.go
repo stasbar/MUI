@@ -21,6 +21,9 @@ type Product struct {
 	Price            uint   `json:"price"`
 	Quantity         int    `json:"quantity"`
 	LastTimeModified uint   `json:"lastTimeModified"`
+	Width            uint   `json:"width"`
+	Height           uint   `json:"height"`
+	Length           uint   `json:"length"`
 	Deleted          bool   `json:"deleted"`
 }
 
@@ -79,40 +82,67 @@ func uuidv4() string {
 }
 
 var sampleProducts = map[string]*Product{
-	"123asd": &Product{"123asd", "Samsung", "Galaxy S7", 1999, 100, 0, false},
-	"234sdf": &Product{"234sdf", "Samsung", "Galaxy S8", 2299, 100, 0, false},
-	"345dfg": &Product{"345dfg", "Google", "Nexus 5", 1500, 20, 0, false},
-	"456fgh": &Product{"456fgh", "Google", "Nexus 6P", 1899, 20, 0, false},
-	"567ghj": &Product{"567ghj", "Google", "Pixel", 1999, 10, 0, false},
+	"123asd": &Product{"123asd", "Samsung", "Galaxy S7", 1999, 100, 0, 1000, 5000, 100, false},
+	"234sdf": &Product{"234sdf", "Samsung", "Galaxy S8", 2299, 100, 0, 2000, 4000, 200, false},
+	"345dfg": &Product{"345dfg", "Google", "Nexus 5", 1500, 20, 0, 3000, 3000, 300, false},
+	"456fgh": &Product{"456fgh", "Google", "Nexus 6P", 1899, 20, 0, 4000, 2000, 400, false},
+	"567ghj": &Product{"567ghj", "Google", "Pixel", 1999, 10, 0, 5000, 1000, 500, false},
+}
+
+var warehouseProductDeviceSubtotal = map[string]map[string]map[string]int{
+	"lema19": productDeviceSubtotal,
+	"jaskowaDolina60": map[string]map[string]int{
+		"123asd": map[string]int{
+			"123": 1,
+			"234": -1,
+		},
+		"234sdf": map[string]int{
+			"123": 5,
+			"234": -5,
+		},
+		"345dfg": map[string]int{
+			"123": 6,
+			"234": -6,
+		},
+		"456fgh": map[string]int{
+			"123": 7,
+			"234": -7,
+		},
+		"567ghj": map[string]int{
+			"123": 8,
+			"234": -8,
+		},
+	},
 }
 
 // initial subtotals
 var productDeviceSubtotal = map[string]map[string]int{
 	"123asd": map[string]int{
-		"123": 3,
-		"234": -3,
-	},
-	"234sdf": map[string]int{
-		"123": 4,
-		"234": -4,
-	},
-	"345dfg": map[string]int{
-		"123": 5,
+		"123": 10,
 		"234": -5,
 	},
+	"234sdf": map[string]int{
+		"123": -20,
+		"234": 30,
+	},
+	"345dfg": map[string]int{
+		"123": -20,
+		"234": 30,
+	},
 	"456fgh": map[string]int{
-		"123": 6,
-		"234": -6,
+		"123": -20,
+		"234": 30,
 	},
 	"567ghj": map[string]int{
-		"123": 7,
-		"234": -7,
+		"123": -20,
+		"234": 30,
 	},
 }
 
 func main() {
 	router := httprouter.New()
 	router.GET("/products", logger(getAllProducts))
+	router.GET("/warehouses", logger(getAllWarehouses))
 	router.GET("/products/:id", logger(getProduct))
 	router.GET("/currentUser", logger(currentUser))
 	router.POST("/sync", logger(sync))
@@ -271,6 +301,18 @@ func logger(next httprouter.Handle) httprouter.Handle {
 	}
 }
 
+func getAllWarehouses(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	keys := make([]string, len(warehouseProductDeviceSubtotal))
+
+	i := 0
+	for k := range warehouseProductDeviceSubtotal {
+		keys[i] = k
+		i++
+	}
+
+	json.NewEncoder(w).Encode(keys)
+}
+
 func getAllProducts(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	json.NewEncoder(w).Encode(sampleProducts)
 }
@@ -286,6 +328,14 @@ func getProduct(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	warehouses, ok := r.URL.Query()["warehouse"]
+	var warehouse string
+	if !ok || len(warehouses[0]) < 1 {
+		warehouse = "lema19"
+		log.Println("no warehouse specified, using lema19")
+	} else {
+		warehouse = warehouses[0]
+	}
 	deviceId := r.Header.Get("X-Device")
 	log.Printf("sync with deviceId: %s", deviceId)
 
@@ -308,14 +358,14 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 		if _, ok := sampleProducts[product.Id]; !ok {
 			log.Printf("Add product %v \n", product)
-			addProduct(product, deviceId)
+			addProduct(product, deviceId, warehouse)
 			continue
 		}
 
-		if _, ok := productDeviceSubtotal[product.Id]; !ok {
-			productDeviceSubtotal[product.Id] = map[string]int{}
+		if _, ok := warehouseProductDeviceSubtotal[warehouse][product.Id]; !ok {
+			warehouseProductDeviceSubtotal[warehouse][product.Id] = map[string]int{}
 		}
-		productDeviceSubtotal[product.Id][deviceId] = product.Quantity
+		warehouseProductDeviceSubtotal[warehouse][product.Id][deviceId] = product.Quantity
 
 		if product.LastTimeModified > sampleProducts[product.Id].LastTimeModified {
 			log.Printf("Update product %v \n", product)
@@ -326,7 +376,7 @@ func sync(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			continue
 		}
 	}
-	sumupTotalQuantities()
+	sumupTotalQuantities(warehouse)
 	respondWithUpdatedProducts(w)
 }
 
@@ -334,24 +384,24 @@ func updateProduct(product Product, deviceId string) {
 	sampleProducts[product.Id] = &product
 }
 
-func addProduct(product Product, deviceId string) {
+func addProduct(product Product, deviceId string, warehouse string) {
 	sampleProducts[product.Id] = &product
 
-	productDeviceSubtotal[product.Id] = map[string]int{}
-	productDeviceSubtotal[product.Id][deviceId] = product.Quantity
+	warehouseProductDeviceSubtotal[warehouse][product.Id] = map[string]int{}
+	warehouseProductDeviceSubtotal[warehouse][product.Id][deviceId] = product.Quantity
 
-	sampleProducts[product.Id].Quantity = totalForProduct(product.Id)
+	sampleProducts[product.Id].Quantity = totalForProduct(product.Id, warehouse)
 }
 
-func sumupTotalQuantities() {
+func sumupTotalQuantities(warehouse string) {
 	for productId := range sampleProducts {
-		sampleProducts[productId].Quantity = totalForProduct(productId)
+		sampleProducts[productId].Quantity = totalForProduct(productId, warehouse)
 	}
 }
 
-func totalForProduct(productId string) int {
+func totalForProduct(productId string, warehouse string) int {
 	total := 0
-	for _, v := range productDeviceSubtotal[productId] {
+	for _, v := range warehouseProductDeviceSubtotal[warehouse][productId] {
 		total += v
 	}
 	return total
@@ -359,9 +409,5 @@ func totalForProduct(productId string) int {
 
 func respondWithUpdatedProducts(w http.ResponseWriter) {
 	log.Println("Responded with state")
-	for i := range sampleProducts {
-		log.Printf("Product %s %s quantity %d ", sampleProducts[i].Manufacturer, sampleProducts[i].Model, sampleProducts[i].Quantity)
-		log.Printf("Quantities map %v", productDeviceSubtotal[i])
-	}
 	json.NewEncoder(w).Encode(sampleProducts)
 }
